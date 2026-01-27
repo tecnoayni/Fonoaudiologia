@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ver Registros</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container grande">
+
+    <h2 style="text-align:center; margin-bottom:15px;">
+        REGISTROS
+    </h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Paciente</th>
+                <th>Fecha</th>
+                <th>Especialista</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="tablaRegistros"></tbody>
+    </table>
+
+    <div id="cardsMobile"></div>
+
+    <div style="margin-top:20px; text-align:center;">
+        <button class="btn-atras" onclick="window.location.href='menu.html'">
+            ⬅ Atrás
+        </button>
+    </div>
+
+</div>
+
+<div class="container grande" id="detalleContainer" style="display:none;">
+
+    <h2 style="text-align:center;">Detalle del Registro</h2>
+    <img id="verImagen" alt="Imagen del paciente">
+    <audio id="verAudio" controls></audio>
+    <input type="text" id="editNombre" placeholder="Nombre del paciente">
+    <input type="date" id="editFecha">
+    <input type="text" id="editEspecialista" placeholder="Especialista">
+    <input type="text" id="editDiagnostico" placeholder="Diagnóstico">
+    <input type="text" id="editTerapia" placeholder="Terapia">
+
+    <textarea id="editObservaciones"
+              placeholder="Observaciones"
+              maxlength="250"></textarea>
+
+    <button id="guardarCambios">Guardar Cambios</button>
+
+</div>
+    <script type="module" src="verRegistros.js"></script>
+</body>
+</html>

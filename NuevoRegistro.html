@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuevo Registro</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+
+    <div class="logo">
+        <img src="Logo.png" alt="Logo">
+    </div>
+
+    <h2>NUEVO REGISTRO</h2>
+
+    <form id="registroForm">
+
+        <input type="text" id="nombrePaciente" placeholder="Nombre del paciente" required>
+
+        <input type="date" id="fechaRegistro" required>
+
+        <label for="audio">Archivo de audio:</label>
+        <input type="file" id="audio" accept="audio/*" required>
+
+        <label for="imagen">Archivo de imagen:</label>
+        <input type="file" id="imagen" accept="image/*" required>
+
+        <select id="especialista" required>
+            <option value="" disabled selected>Seleccionar especialista</option>
+            <option value="Lic. Mirko Apaza">Lic. Mirko Apaza</option>
+            <option value="Lic. Katherine Herrera">Lic. Katherine Herrera</option>
+            <option value="Lic. Nathaly Villegas">Lic. Nathaly Villegas</option>
+        </select>
+
+        <select id="diagnostico" required>
+            <option value="" disabled selected>Seleccionar diagnóstico</option>
+            <option value="Dificultades en la alimentación y la deglución">Dificultades en la alimentación y la deglución</option>
+            <option value="Trastorno del habla y la articulación">Trastorno del habla y la articulación</option>
+            <option value="Trastorno de la resonancia">Trastorno de la resonancia</option>
+            <option value="Trastorno del lenguaje">Trastorno del lenguaje</option>
+            <option value="Trastorno de la voz">Trastorno de la voz</option>
+            <option value="Hipoacusia conductiva">Hipoacusia conductiva</option>
+            <option value="Problemas orofaciales y miofuncionales">Problemas orofaciales y miofuncionales</option>
+        </select>
+
+        <select id="terapia" required>
+            <option value="" disabled selected>Seleccionar terapia</option>
+            <option value="Terapia de Habla">Terapia de Habla</option>
+            <option value="Terapia de Resonancia">Terapia de Resonancia</option>
+            <option value="Terapia de Deglución">Terapia de Deglución</option>
+            <option value="Estimulación del Lenguaje">Estimulación del Lenguaje</option>
+            <option value="Orientación Familiar">Orientación Familiar</option>
+        </select>
+
+        <label for="observaciones">Observaciones:</label>
+        <textarea id="observaciones"
+                  placeholder="Escribe tus observaciones (máx. 250 caracteres)"
+                  maxlength="250"></textarea>
+
+        <button type="submit">Guardar Registro</button>
+    </form>
+
+    <!-- BOTÓN DE ATRÁS -->
+    <button id="btnAtras" class="menu-btn" style="margin-top: 20px;">⬅ Atrás</button>
+
+</div>
+
+<script type="module" src="nuevoRegist.js"></script>
+<script>
+    // Redirige al menú principal
+    const btnAtras = document.getElementById("btnAtras");
+    btnAtras.addEventListener("click", () => {
+        window.location.href = "menu.html";
+    });
+</script>
+
+<script type="module" src="nuevoRegist.js"></script>
+
+</body>
+</html>
