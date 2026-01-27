@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!querySnapshot.empty) {
         alert("Inicio de sesión correcto");
-        window.location.href = "menu.html"; // Redirige al menú
+        window.location.href = "Menu.html"; // Redirige al menú
       } else {
         alert("Usuario o contraseña incorrectos");
       }
@@ -50,3 +50,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
