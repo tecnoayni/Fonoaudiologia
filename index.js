@@ -20,10 +20,10 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const nombreUsuario = document.getElementById("email").value.trim(); // tu campo es nombreUsuario
+    const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value.trim();
 
-    if (!nombreUsuario || !password) {
+    if (!email || !password) {
       alert("Completa todos los campos");
       return;
     }
@@ -31,14 +31,17 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const q = query(
         collection(db, "Usuarios"),
-        where("nombreUsuario", "==", nombreUsuario),
+        where("nombreUsuario", "==", email),
         where("password", "==", password)
       );
 
-      const snapshot = await getDocs(q);
+      const querySnapshot = await getDocs(q);
 
-      if (!snapshot.empty) {
-        // login correcto
+      if (!querySnapshot.empty) {
+        // Guardamos sesión en localStorage
+        localStorage.setItem("usuarioLogueado", email);
+
+        // Redirige al menú
         window.location.href = "Menu.html";
       } else {
         alert("Usuario o contraseña incorrectos");
