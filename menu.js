@@ -1,27 +1,50 @@
-import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-    const auth = getAuth();
+const firebaseConfig = {
+  apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
+  authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
+  projectId: "fonoaudiologia-2bf21",
+  storageBucket: "fonoaudiologia-2bf21.appspot.com",
+  messagingSenderId: "645482975012",
+  appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
+};
 
-    const btnNuevoRegistro = document.getElementById("btnNuevoRegistro");
-    const btnListaRegistros = document.getElementById("btnListaRegistros");
-    const btnCerrarSesion = document.getElementById("btnCerrarSesion");
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
-    btnNuevoRegistro?.addEventListener("click", () => {
-        window.location.href = "NuevoRegistro.html";
-    });
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
 
-    btnListaRegistros?.addEventListener("click", () => {
-        window.location.href = "Lista.html";
-    });
-
-    btnCerrarSesion?.addEventListener("click", () => {
-        signOut(auth).then(() => {
-            window.location.href = "Index.html";
-        }).catch((error) => {
-            alert("Error al cerrar sesión");
-            console.error(error);
-        });
-    });
+    window.location.href = "index.html";
+  }
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+  const btnNuevoRegistro = document.getElementById("btnNuevoRegistro");
+  const btnListaRegistros = document.getElementById("btnListaRegistros");
+  const btnCerrarSesion = document.getElementById("btnCerrarSesion");
+
+  if (btnNuevoRegistro) {
+    btnNuevoRegistro.addEventListener("click", () => {
+      window.location.href = "NuevoRegistro.html";
+    });
+  }
+
+  if (btnListaRegistros) {
+    btnListaRegistros.addEventListener("click", () => {
+      window.location.href = "Lista.html";
+    });
+  }
+
+  if (btnCerrarSesion) {
+    btnCerrarSesion.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "index.html";
+      } catch (error) {
+        alert("Error al cerrar sesión");
+      }
+    });
+  }
+});
