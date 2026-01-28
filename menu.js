@@ -16,7 +16,7 @@ const auth = getAuth(app);
 onAuthStateChanged(auth, (user) => {
   if (!user) {
 
-    window.location.href = "index.html";
+    window.location.href = "Index.html";
   }
 });
 
@@ -41,10 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
     btnCerrarSesion.addEventListener("click", async () => {
       try {
         await signOut(auth);
-        window.location.href = "index.html";
+        window.location.href = "Index.html";
       } catch (error) {
         alert("Error al cerrar sesión");
       }
     });
   }
 });
+
