@@ -1,49 +1,32 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menú Principal</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Fonoaudiología</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="container">
-        <div class="logo">
-            <img src="Logo.png" alt="Logo">
-        </div>
-        <h2>MENÚ PRINCIPAL</h2>
-        
-        <div class="menu-opciones">
-            <button class="menu-btn" id="btnNuevoRegistro">
-                <span class="icon">➕</span>
-                <span>Nuevo Registro</span>
-            </button>
-
-            <button class="menu-btn" id="btnListaRegistros">
-                <span class="icon">📋</span>
-                <span>Lista de Registros</span>
-            </button>
-
-            <button class="menu-btn" id="btnCerrarSesion">
-                <span class="icon">🚪</span>
-                <span>Cerrar Sesión</span>
-            </button>
-        </div>
+<div class="container">
+    <h2>SISTEMA DE REGISTRO FONOAUDIOLOGIA</h2>
+    <div class="logo">
+        <img src="Logo.png" alt="Logo">
     </div>
 
-    <script type="module">
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <h2>INICIAR SESIÓN</h2>
 
-        const auth = getAuth();
+    <form id="loginForm">
+        <input type="email" id="email" placeholder="Correo electrónico" required>
+        <input type="password" id="password" placeholder="Contraseña" required>
+        <button type="submit">Ingresar</button>
 
-        onAuthStateChanged(auth, (user) => {
-            if (!user) {
-                window.location.href = "Index.html";
-            }
-        });
-    </script>
+        <p class="registro">
+            ¿No tienes cuenta? <a href="Registro.html">Regístrate</a>
+        </p>
+    </form>
+</div>
 
-    <script type="module" src="menu.js"></script>
+<script type="module" src="index.js"></script>
 </body>
 </html>
