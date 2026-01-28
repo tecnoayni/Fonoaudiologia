@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
@@ -11,7 +11,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const auth = getAuth(app);
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("loginForm");
@@ -29,25 +29,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const q = query(
-        collection(db, "Usuarios"),
-        where("nombreUsuario", "==", email),
-        where("password", "==", password)
-      );
-
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        alert("Inicio de sesión correcto");
-        window.location.href = "Menu.html"; // Redirige al menú
-      } else {
-        alert("Usuario o contraseña incorrectos");
-      }
-
+      await signInWithEmailAndPassword(auth, email, password);
+      window.location.href = "Menu.html"; // Redirige al menú
     } catch (error) {
       console.error(error);
-      alert("Error al iniciar sesión");
+      alert("Correo o contraseña incorrectos");
     }
   });
 });
-
