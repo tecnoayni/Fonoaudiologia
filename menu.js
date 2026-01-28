@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (btnNuevoRegistro) {
         btnNuevoRegistro.addEventListener("click", () => {
-            window.location.href = "nuevoRegistro.html";
+            window.location.href = "NuevoRegistro.html";
         });
     }
 
@@ -17,7 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (btnCerrarSesion) {
         btnCerrarSesion.addEventListener("click", () => {
-            window.location.href = "index.html"; 
+            window.location.href = "Index.html"; 
         });
     }
 });
+
