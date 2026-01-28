@@ -17,10 +17,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btnCerrarSesion?.addEventListener("click", () => {
         signOut(auth).then(() => {
-            window.location.href = "index.html";
+            window.location.href = "Index.html";
         }).catch((error) => {
             alert("Error al cerrar sesión");
             console.error(error);
         });
     });
 });
+
