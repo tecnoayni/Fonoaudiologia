@@ -3,30 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login Fonoaudiología</title>
+  <title>Menú Principal</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="container">
-    <h2>SISTEMA DE REGISTRO FONOAUDIOLOGIA</h2>
     <div class="logo">
         <img src="Logo.png" alt="Logo">
     </div>
 
-    <h2>INICIAR SESIÓN</h2>
+    <h2>MENÚ PRINCIPAL</h2>
 
-    <form id="loginForm">
-        <input type="email" id="email" placeholder="Correo electrónico" required>
-        <input type="password" id="password" placeholder="Contraseña" required>
-        <button type="submit">Ingresar</button>
+    <div class="menu-opciones">
+        <button class="menu-btn" id="btnNuevoRegistro">
+            <span class="icon">➕</span>
+            <span>Nuevo Registro</span>
+        </button>
 
-        <p class="registro">
-            ¿No tienes cuenta? <a href="Registro.html">Regístrate</a>
-        </p>
-    </form>
+        <button class="menu-btn" id="btnListaRegistros">
+            <span class="icon">📋</span>
+            <span>Lista de Registros</span>
+        </button>
+
+        <button class="menu-btn" id="btnCerrarSesion">
+            <span class="icon">🚪</span>
+            <span>Cerrar Sesión</span>
+        </button>
+    </div>
 </div>
 
-<script type="module" src="index.js"></script>
+<script type="module" src="menu.js"></script>
 </body>
 </html>
