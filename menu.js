@@ -1,8 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Verificar si el usuario está logueado
   const usuario = localStorage.getItem("usuarioLogueado");
   if (!usuario) {
-    window.location.href = "index.html";
+    window.location.href = "Index.html";
     return;
   }
 
@@ -29,4 +28,5 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
 
