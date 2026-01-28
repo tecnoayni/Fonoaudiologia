@@ -20,6 +20,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Verificar sesión
+const usuario = localStorage.getItem("usuarioLogueado");
+if (!usuario) {
+  window.location.href = "index.html";
+}
+
 const tabla = document.getElementById("tablaRegistros");
 const detalleBox = document.getElementById("detalleContainer");
 
