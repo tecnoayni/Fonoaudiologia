@@ -15,37 +15,31 @@ const auth = getAuth(app);
 
 onAuthStateChanged(auth, (user) => {
   if (!user) {
-
     window.location.href = "Index.html";
   }
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  const btnNuevoRegistro = document.getElementById("btnNuevoRegistro");
-  const btnListaRegistros = document.getElementById("btnListaRegistros");
-  const btnCerrarSesion = document.getElementById("btnCerrarSesion");
+    const btnNuevoRegistro = document.getElementById("btnNuevoRegistro");
+    const btnListaRegistros = document.getElementById("btnListaRegistros");
+    const btnCerrarSesion = document.getElementById("btnCerrarSesion");
 
-  if (btnNuevoRegistro) {
-    btnNuevoRegistro.addEventListener("click", () => {
-      window.location.href = "NuevoRegistro.html";
-    });
-  }
+    if (btnNuevoRegistro) {
+        btnNuevoRegistro.addEventListener("click", () => {
+            window.location.href = "NuevoRegistro.html";
+        });
+    }
 
-  if (btnListaRegistros) {
-    btnListaRegistros.addEventListener("click", () => {
-      window.location.href = "Lista.html";
-    });
-  }
+    if (btnListaRegistros) {
+        btnListaRegistros.addEventListener("click", () => {
+            window.location.href = "Lista.html";
+        });
+    }
 
-  if (btnCerrarSesion) {
-    btnCerrarSesion.addEventListener("click", async () => {
-      try {
-        await signOut(auth);
-        window.location.href = "Index.html";
-      } catch (error) {
-        alert("Error al cerrar sesión");
-      }
-    });
-  }
+    if (btnCerrarSesion) {
+        btnCerrarSesion.addEventListener("click", async () => {
+            await signOut(auth); // Cierra sesión
+            window.location.href = "Index.html";
+        });
+    }
 });
-
