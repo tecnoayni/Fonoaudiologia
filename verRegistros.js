@@ -9,13 +9,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // 🔹 Firebase config
   const firebaseConfig = {
-    apiKey: "TU_API_KEY",
-    authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
-    projectId: "fonoaudiologia-2bf21",
-    storageBucket: "fonoaudiologia-2bf21.appspot.com",
-    messagingSenderId: "XXXX",
-    appId: "XXXX"
-  };
+  apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
+  authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
+  projectId: "fonoaudiologia-2bf21",
+  storageBucket: "fonoaudiologia-2bf21.appspot.com",
+  messagingSenderId: "645482975012",
+  appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
+};
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
@@ -95,3 +95,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
 });
+
