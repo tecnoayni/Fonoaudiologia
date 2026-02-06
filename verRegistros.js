@@ -2,25 +2,25 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
   getFirestore,
   collection,
-  getDocs
+  getDocs,
+  deleteDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  // 🔹 Firebase config
   const firebaseConfig = {
-  apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
-  authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
-  projectId: "fonoaudiologia-2bf21",
-  storageBucket: "fonoaudiologia-2bf21.appspot.com",
-  messagingSenderId: "645482975012",
-  appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
-};
+    apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
+    authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
+    projectId: "fonoaudiologia-2bf21",
+    storageBucket: "fonoaudiologia-2bf21.appspot.com",
+    messagingSenderId: "645482975012",
+    appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
+  };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 🔹 Elementos
   const tabla = document.getElementById("tablaRegistros");
   const detalle = document.getElementById("detalleContainer");
 
@@ -34,41 +34,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   const editTerapia = document.getElementById("editTerapia");
   const editObservaciones = document.getElementById("editObservaciones");
 
-  // 🧪 Verificación crítica
-  if (!verAudio) {
-    console.error("❌ No se encontró el elemento <audio id='verAudio'>");
-    return;
-  }
-
   // 🔹 Cargar registros
   const snapshot = await getDocs(collection(db, "PacientesRegistro"));
   tabla.innerHTML = "";
 
-  snapshot.forEach(doc => {
-    const data = doc.data();
+  snapshot.forEach(docSnap => {
+    const data = docSnap.data();
+    const id = docSnap.id;
 
     const tr = document.createElement("tr");
+
     tr.innerHTML = `
+      <td>
+        ${data.imagenUrl 
+          ? `<img src="${data.imagenUrl}" style="width:50px;height:50px;object-fit:cover;border-radius:6px;">`
+          : "—"}
+      </td>
       <td>${data.nombrePaciente}</td>
       <td>${data.fechaRegistro}</td>
       <td>${data.especialista}</td>
-      <td><button>Ver</button></td>
+      <td>
+        <button class="btn-ver">Ver</button>
+        <button class="btn-borrar">Borrar</button>
+      </td>
     `;
 
-    tr.querySelector("button").addEventListener("click", () => {
-      mostrarDetalle(data);
-    });
+    tr.querySelector(".btn-ver").onclick = () => mostrarDetalle(data);
+    tr.querySelector(".btn-borrar").onclick = () => borrarRegistro(id);
 
     tabla.appendChild(tr);
   });
 
   // 🔹 Mostrar detalle
   function mostrarDetalle(data) {
-    console.log("▶ Registro seleccionado:", data);
-
     detalle.style.display = "block";
 
-    // 📸 Imagen
+    // Imagen
     if (data.imagenUrl) {
       verImagen.src = data.imagenUrl;
       verImagen.style.display = "block";
@@ -76,16 +77,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       verImagen.style.display = "none";
     }
 
-    // 🎧 Audio (CLAVE)
+    // Audio
     if (data.audioUrl) {
       verAudio.src = data.audioUrl;
+      verAudio.load();
       verAudio.style.display = "block";
-      verAudio.load(); // 🔥 ESTO ES CLAVE
     } else {
       verAudio.style.display = "none";
     }
 
-    // 📝 Inputs
     editNombre.value = data.nombrePaciente || "";
     editFecha.value = data.fechaRegistro || "";
     editEspecialista.value = data.especialista || "";
@@ -94,6 +94,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     editObservaciones.value = data.observaciones || "";
   }
 
+  // 🔥 Borrar registro
+  async function borrarRegistro(id) {
+    if (!confirm("¿Seguro que deseas eliminar este registro?")) return;
+
+    await deleteDoc(doc(db, "PacientesRegistro", id));
+    alert("Registro eliminado");
+    location.reload();
+  }
+
 });
-
-
