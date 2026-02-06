@@ -3,6 +3,8 @@ import {
   getFirestore,
   collection,
   addDoc,
+  doc,
+  setDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -11,7 +13,6 @@ const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
   projectId: "fonoaudiologia-2bf21",
-  messagingSenderId: "645482975012",
   appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
 };
 
@@ -28,9 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("registroForm");
   const btnGrabar = document.getElementById("btnGrabar");
   const btnDetener = document.getElementById("btnDetener");
-  const audioInput = document.getElementById("audio");
 
-  /* ===== GRABAR AUDIO ===== */
   btnGrabar?.addEventListener("click", async () => {
     audioChunks = [];
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -53,31 +52,30 @@ document.addEventListener("DOMContentLoaded", () => {
     btnDetener.disabled = true;
   });
 
-  /* ===== SUBMIT ===== */
-  form?.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     try {
-      const nombrePaciente = nombrePacienteInput("nombrePaciente");
-      const fechaRegistro = value("fechaRegistro");
-      const especialista = value("especialista");
-      const diagnostico = value("diagnostico");
-      const terapia = value("terapia");
-      const observaciones = value("observaciones");
+      const nombrePaciente = val("nombrePaciente");
+      const fechaRegistro = val("fechaRegistro");
+      const especialista = val("especialista");
+      const diagnostico = val("diagnostico");
+      const terapia = val("terapia");
+      const observaciones = val("observaciones");
+
       const imagenFile = file("imagen");
+      const audioFile = audioGrabadoBlob || file("audio");
 
-      let audioFile = audioGrabadoBlob || file("audio");
-
-      if (!nombrePaciente || !fechaRegistro || !especialista || !imagenFile || !audioFile) {
-        alert("Completa todos los campos obligatorios");
+      if (!nombrePaciente || !fechaRegistro || !imagenFile || !audioFile) {
+        alert("Faltan datos obligatorios");
         return;
       }
 
-      /* ===== CONVERSIÓN ===== */
       const audioBase64 = await fileToBase64(audioFile);
-      const imagenBase64 = await compressImage(imagenFile);
+      const imagenBase64 = await ultraCompressImage(imagenFile);
 
-      await addDoc(collection(db, "PacientesRegistro"), {
+      // 1️⃣ Crear registro principal
+      const docRef = await addDoc(collection(db, "PacientesRegistro"), {
         nombrePaciente,
         fechaRegistro,
         especialista,
@@ -85,6 +83,11 @@ document.addEventListener("DOMContentLoaded", () => {
         terapia,
         observaciones,
         audioBase64,
+        creadoEn: serverTimestamp()
+      });
+
+      // 2️⃣ Guardar imagen en OTRA colección
+      await setDoc(doc(db, "PacientesImagenes", docRef.id), {
         imagenBase64,
         creadoEn: serverTimestamp()
       });
@@ -95,36 +98,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (err) {
       console.error(err);
-      alert("Error: el archivo es demasiado grande ❌");
+      alert("Error: archivo demasiado grande ❌");
     }
   });
 });
 
 /* ================= HELPERS ================= */
 
-function value(id) {
-  return document.getElementById(id)?.value.trim();
-}
-
-function file(id) {
-  return document.getElementById(id)?.files[0];
-}
-
-function nombrePacienteInput(id) {
-  return document.getElementById(id)?.value.trim();
-}
+const val = id => document.getElementById(id)?.value.trim();
+const file = id => document.getElementById(id)?.files[0];
 
 function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
   });
 }
 
-/* ===== COMPRESIÓN DE IMAGEN ===== */
-function compressImage(file) {
+/* ===== COMPRESIÓN EXTREMA ===== */
+function ultraCompressImage(file) {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const reader = new FileReader();
@@ -133,16 +127,16 @@ function compressImage(file) {
 
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const MAX_WIDTH = 600;
+      const MAX = 400; // 🔥 más pequeño
 
-      const scale = MAX_WIDTH / img.width;
-      canvas.width = MAX_WIDTH;
+      const scale = MAX / img.width;
+      canvas.width = MAX;
       canvas.height = img.height * scale;
 
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      resolve(canvas.toDataURL("image/jpeg", 0.6)); // 🔥 clave
+      resolve(canvas.toDataURL("image/jpeg", 0.45)); // 🔥 calidad baja
     };
 
     reader.onerror = reject;
