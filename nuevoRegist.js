@@ -3,8 +3,6 @@ import {
   getFirestore,
   collection,
   addDoc,
-  doc,
-  setDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -19,6 +17,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+/* ================= CLOUDINARY ================= */
+const CLOUD_NAME = "disjesee5";
+const UPLOAD_PRESET = "Fono-Audio";
+
 /* ================= AUDIO ================= */
 let mediaRecorder;
 let audioChunks = [];
@@ -30,15 +32,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnGrabar = document.getElementById("btnGrabar");
   const btnDetener = document.getElementById("btnDetener");
 
+  /* ===== GRABAR AUDIO ===== */
   btnGrabar?.addEventListener("click", async () => {
     audioChunks = [];
+
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
 
     mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
     mediaRecorder.onstop = () => {
       audioGrabadoBlob = new Blob(audioChunks, { type: "audio/webm" });
-      alert("Audio grabado ✔");
+      alert("Audio grabado correctamente 🎤");
     };
 
     mediaRecorder.start();
@@ -52,6 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnDetener.disabled = true;
   });
 
+  /* ===== GUARDAR REGISTRO ===== */
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -63,32 +69,26 @@ document.addEventListener("DOMContentLoaded", () => {
       const terapia = val("terapia");
       const observaciones = val("observaciones");
 
-      const imagenFile = file("imagen");
+      // Puede venir de grabación o archivo
       const audioFile = audioGrabadoBlob || file("audio");
 
-      if (!nombrePaciente || !fechaRegistro || !imagenFile || !audioFile) {
-        alert("Faltan datos obligatorios");
+      if (!nombrePaciente || !fechaRegistro || !especialista || !audioFile) {
+        alert("Completa los campos obligatorios");
         return;
       }
 
-      const audioBase64 = await fileToBase64(audioFile);
-      const imagenBase64 = await ultraCompressImage(imagenFile);
+      /* ===== SUBIR AUDIO A CLOUDINARY ===== */
+      const audioUrl = await uploadAudioCloudinary(audioFile);
 
-      // 1️⃣ Crear registro principal
-      const docRef = await addDoc(collection(db, "PacientesRegistro"), {
+      /* ===== GUARDAR EN FIRESTORE ===== */
+      await addDoc(collection(db, "PacientesRegistro"), {
         nombrePaciente,
         fechaRegistro,
         especialista,
         diagnostico,
         terapia,
         observaciones,
-        audioBase64,
-        creadoEn: serverTimestamp()
-      });
-
-      // 2️⃣ Guardar imagen en OTRA colección
-      await setDoc(doc(db, "PacientesImagenes", docRef.id), {
-        imagenBase64,
+        audioUrl,
         creadoEn: serverTimestamp()
       });
 
@@ -96,50 +96,36 @@ document.addEventListener("DOMContentLoaded", () => {
       form.reset();
       audioGrabadoBlob = null;
 
-    } catch (err) {
-      console.error(err);
-      alert("Error: archivo demasiado grande ❌");
+    } catch (error) {
+      console.error(error);
+      alert("Error al guardar el registro ❌");
     }
   });
 });
 
-/* ================= HELPERS ================= */
+/* ================= FUNCIONES AUXILIARES ================= */
 
 const val = id => document.getElementById(id)?.value.trim();
 const file = id => document.getElementById(id)?.files[0];
 
-function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-}
+/* ===== SUBIR AUDIO A CLOUDINARY ===== */
+async function uploadAudioCloudinary(audioFile) {
+  const formData = new FormData();
+  formData.append("file", audioFile);
+  formData.append("upload_preset", UPLOAD_PRESET);
 
-/* ===== COMPRESIÓN EXTREMA ===== */
-function ultraCompressImage(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const reader = new FileReader();
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`,
+    {
+      method: "POST",
+      body: formData
+    }
+  );
 
-    reader.onload = e => img.src = e.target.result;
+  if (!response.ok) {
+    throw new Error("Error al subir el audio a Cloudinary");
+  }
 
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const MAX = 400; // 🔥 más pequeño
-
-      const scale = MAX / img.width;
-      canvas.width = MAX;
-      canvas.height = img.height * scale;
-
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      resolve(canvas.toDataURL("image/jpeg", 0.45)); // 🔥 calidad baja
-    };
-
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  const data = await response.json();
+  return data.secure_url; // 🔥 URL pública
 }
