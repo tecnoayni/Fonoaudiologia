@@ -2,12 +2,18 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
   getFirestore,
   collection,
-  getDocs,
-  doc,
-  deleteDoc
+  addDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* 🔹 Firebase config */
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+/* 🔹 Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
@@ -19,94 +25,56 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-/* 🔹 Elementos */
-const tabla = document.getElementById("tablaRegistros");
-const detalle = document.getElementById("detalleContainer");
+/* 🔹 FORM */
+const form = document.getElementById("registroForm");
 
-const verImagen = document.getElementById("verImagen");
-const verAudio = document.getElementById("verAudio");
+/* 🔹 AUDIO grabado */
+let audioBlob = null;
 
-const editNombre = document.getElementById("editNombre");
-const editFecha = document.getElementById("editFecha");
-const editEspecialista = document.getElementById("editEspecialista");
-const editDiagnostico = document.getElementById("editDiagnostico");
-const editTerapia = document.getElementById("editTerapia");
-const editObservaciones = document.getElementById("editObservaciones");
+/* 🎙️ Grabación */
+let mediaRecorder;
+let chunks = [];
 
-/* 🔹 Cargar registros */
-async function cargarRegistros() {
-  tabla.innerHTML = "";
+const btnGrabar = document.getElementById("btnGrabar");
+const btnDetener = document.getElementById("btnDetener");
+const audioPreview = document.getElementById("audioPreview");
 
-  const snapshot = await getDocs(collection(db, "PacientesRegistro"));
+btnGrabar.onclick = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  mediaRecorder = new MediaRecorder(stream);
+  chunks = [];
 
-  snapshot.forEach(docSnap => {
-    const data = docSnap.data();
+  mediaRecorder.ondataavailable = e => chunks.push(e.data);
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>
-        <img src="${data.imagenUrl || ""}" 
-             style="width:50px;height:50px;object-fit:cover;border-radius:6px;">
-      </td>
-      <td>${data.nombrePaciente}</td>
-      <td>${data.fechaRegistro}</td>
-      <td>${data.especialista}</td>
-      <td class="acciones">
-        <button class="btn-ver">Ver</button>
-        <button class="btn-borrar">Borrar</button>
-      </td>
-    `;
+  mediaRecorder.onstop = () => {
+    audioBlob = new Blob(chunks, { type: "audio/webm" });
+    audioPreview.src = URL.createObjectURL(audioBlob);
+  };
 
-    tr.querySelector(".btn-ver").onclick = () =>
-      mostrarDetalle(docSnap.id, data);
+  mediaRecorder.start();
+  btnGrabar.disabled = true;
+  btnDetener.disabled = false;
+};
 
-    tr.querySelector(".btn-borrar").onclick = () =>
-      borrarRegistro(docSnap.id);
+btnDetener.onclick = () => {
+  mediaRecorder.stop();
+  btnGrabar.disabled = false;
+  btnDetener.disabled = true;
+};
 
-    tabla.appendChild(tr);
-  });
-}
+/* 🔹 SUBMIT */
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-/* 🔹 Mostrar detalle */
-function mostrarDetalle(id, data) {
-  detalle.style.display = "block";
+  try {
+    const nombrePaciente = document.getElementById("nombrePaciente").value.trim();
+    const fechaRegistro = document.getElementById("fechaRegistro").value;
+    const especialista = document.getElementById("especialista").value;
+    const diagnostico = document.getElementById("diagnostico").value;
+    const terapia = document.getElementById("terapia").value;
+    const observaciones = document.getElementById("observaciones").value;
 
-  /* 📸 Imagen */
-  if (data.imagenUrl) {
-    verImagen.src = data.imagenUrl;
-    verImagen.style.display = "block";
-  } else {
-    verImagen.style.display = "none";
-  }
-
-  /* 🎧 Audio */
-  if (data.audioUrl) {
-    verAudio.src = data.audioUrl;
-    verAudio.load();
-    verAudio.style.display = "block";
-  } else {
-    verAudio.style.display = "none";
-  }
-
-  /* 📝 Datos */
-  editNombre.value = data.nombrePaciente || "";
-  editFecha.value = data.fechaRegistro || "";
-  editEspecialista.value = data.especialista || "";
-  editDiagnostico.value = data.diagnostico || "";
-  editTerapia.value = data.terapia || "";
-  editObservaciones.value = data.observaciones || "";
-}
-
-/* 🔹 Borrar registro */
-async function borrarRegistro(id) {
-  if (!confirm("¿Seguro que deseas eliminar este registro?")) return;
-
-  await deleteDoc(doc(db, "PacientesRegistro", id));
-  alert("Registro eliminado");
-  detalle.style.display = "none";
-  cargarRegistros();
-}
-
-/* 🔹 Inicial */
-cargarRegistros();
+    /* 📸 IMAGEN */
+    const imagenFile = docum
