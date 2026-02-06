@@ -1,9 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  serverTimestamp 
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 import {
@@ -13,6 +13,7 @@ import {
   getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
+/* 🔹 Firebase config */
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
@@ -26,24 +27,32 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-document.getElementById("registroForm").addEventListener("submit", async (e) => {
+/* 🔹 Form */
+const form = document.getElementById("registroForm");
+
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   try {
-    const nombrePaciente = nombrePacienteInput.value.trim();
-    const fechaRegistro = fechaRegistroInput.value;
-    const especialista = especialistaInput.value;
-    const diagnostico = diagnosticoInput.value;
-    const terapia = terapiaInput.value;
-    const observaciones = observacionesInput.value;
+    // 📝 Inputs
+    const nombrePaciente = document.getElementById("nombrePaciente").value.trim();
+    const fechaRegistro = document.getElementById("fechaRegistro").value;
+    const especialista = document.getElementById("especialista").value;
+    const diagnostico = document.getElementById("diagnostico").value;
+    const terapia = document.getElementById("terapia").value;
+    const observaciones = document.getElementById("observaciones").value;
 
+    // 📸 Imagen
     const imagenFile = document.getElementById("imagen").files[0];
     if (!imagenFile) {
-      alert("Debe subir una imagen");
+      alert("Debes subir una imagen");
       return;
     }
 
-    // 📸 SUBIR IMAGEN A FIREBASE STORAGE
+    // 🎧 Audio (Cloudinary ya guardado → solo URL)
+    const audioUrl = document.getElementById("audioUrl")?.value || "";
+
+    // 📸 Subir imagen a Firebase Storage
     const imgRef = ref(
       storage,
       `imagenes/${Date.now()}_${imagenFile.name}`
@@ -52,7 +61,7 @@ document.getElementById("registroForm").addEventListener("submit", async (e) => 
     await uploadBytes(imgRef, imagenFile);
     const imagenUrl = await getDownloadURL(imgRef);
 
-    // 🧠 GUARDAR REGISTRO
+    // 💾 Guardar en Firestore
     await addDoc(collection(db, "PacientesRegistro"), {
       nombrePaciente,
       fechaRegistro,
@@ -60,16 +69,16 @@ document.getElementById("registroForm").addEventListener("submit", async (e) => 
       diagnostico,
       terapia,
       observaciones,
-      imagenUrl,      // ✅ URL NORMAL
-      audioUrl,       // (Cloudinary)
+      imagenUrl,
+      audioUrl,
       creadoEn: serverTimestamp()
     });
 
     alert("Registro guardado correctamente");
-    e.target.reset();
+    form.reset();
 
-  } catch (err) {
-    console.error(err);
-    alert("Error al guardar");
+  } catch (error) {
+    console.error(error);
+    alert("Error al guardar el registro");
   }
 });
