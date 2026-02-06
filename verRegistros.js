@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // 🔹 Cargar registros
-  const snapshot = await getDocs(collection(db, "registros"));
+  const snapshot = await getDocs(collection(db, "PacientesRegistro"));
   tabla.innerHTML = "";
 
   snapshot.forEach(doc => {
@@ -95,4 +95,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
 });
+
 
