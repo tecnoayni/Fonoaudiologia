@@ -77,4 +77,57 @@ form.addEventListener("submit", async (e) => {
     const observaciones = document.getElementById("observaciones").value;
 
     /* 📸 IMAGEN */
-    const imagenFile = docum
+    const imagenFile = document.getElementById("imagen").files[0];
+    if (!imagenFile) {
+      alert("Debes subir una imagen");
+      return;
+    }
+
+    /* 📸 SUBIR IMAGEN → FIREBASE */
+    const imgRef = ref(storage, `imagenes/${Date.now()}_${imagenFile.name}`);
+    await uploadBytes(imgRef, imagenFile);
+    const imagenUrl = await getDownloadURL(imgRef);
+
+    /* 🎧 AUDIO → CLOUDINARY */
+    let audioUrl = "";
+
+    const audioInputFile = document.getElementById("audio").files[0];
+    const audioFinal = audioBlob || audioInputFile;
+
+    if (audioFinal) {
+      const formData = new FormData();
+      formData.append("file", audioFinal);
+      formData.append("upload_preset", "disjesee5");
+
+      const res = await fetch(
+        "https://api.cloudinary.com/v1_1/disjesee5/video/upload",
+        { method: "POST", body: formData }
+      );
+
+      const data = await res.json();
+      audioUrl = data.secure_url;
+    }
+
+    /* 💾 FIRESTORE */
+    await addDoc(collection(db, "PacientesRegistro"), {
+      nombrePaciente,
+      fechaRegistro,
+      especialista,
+      diagnostico,
+      terapia,
+      observaciones,
+      imagenUrl,
+      audioUrl,
+      creadoEn: serverTimestamp()
+    });
+
+    alert("Registro guardado correctamente");
+    form.reset();
+    audioPreview.src = "";
+    audioBlob = null;
+
+  } catch (err) {
+    console.error(err);
+    alert("Error al guardar el registro");
+  }
+});
