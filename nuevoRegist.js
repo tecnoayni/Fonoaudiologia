@@ -1,11 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* ================= FIREBASE CONFIG ================= */
 const firebaseConfig = {
-  apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDySDPcNnr5g",
+  apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
   projectId: "fonoaudiologia-2bf21",
-  storageBucket: "fonoaudiologia-2bf21.appspot.com",
+  storageBucket: "fonoaudiologia-2bf21.appspot.com", // NO SE USA
   messagingSenderId: "645482975012",
   appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
 };
@@ -13,105 +19,83 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+/* ================= VARIABLES AUDIO ================= */
 let mediaRecorder;
 let audioChunks = [];
-let audioGrabadoBase64 = null;
+let audioGrabadoBlob = null;
 
+/* ================= DOM READY ================= */
 document.addEventListener("DOMContentLoaded", () => {
 
+  const form = document.getElementById("registroForm");
   const btnGrabar = document.getElementById("btnGrabar");
   const btnDetener = document.getElementById("btnDetener");
-  const audioPreview = document.getElementById("audioPreview");
-  const form = document.getElementById("registroForm");
+  const audioInput = document.getElementById("audio");
 
-  /* =======================
-     GRABACIÓN DE AUDIO
-  ======================= */
-  btnGrabar.addEventListener("click", async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
+  /* ======== GRABAR AUDIO ======== */
+  if (btnGrabar) {
+    btnGrabar.addEventListener("click", async () => {
+      audioChunks = [];
 
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
 
-    mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
 
-      if (audioBlob.size > 1024 * 1024) {
-        alert("El audio grabado supera 1 MB");
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        audioGrabadoBase64 = reader.result;
-        audioPreview.src = audioGrabadoBase64;
+      mediaRecorder.onstop = () => {
+        audioGrabadoBlob = new Blob(audioChunks, { type: "audio/webm" });
+        alert("Audio grabado correctamente");
       };
-      reader.readAsDataURL(audioBlob);
-    };
 
-    mediaRecorder.start();
-    btnGrabar.disabled = true;
-    btnDetener.disabled = false;
-  });
+      mediaRecorder.start();
+      btnGrabar.disabled = true;
+      btnDetener.disabled = false;
+    });
+  }
 
-  btnDetener.addEventListener("click", () => {
-    mediaRecorder.stop();
-    btnGrabar.disabled = false;
-    btnDetener.disabled = true;
-  });
+  /* ======== DETENER GRABACIÓN ======== */
+  if (btnDetener) {
+    btnDetener.addEventListener("click", () => {
+      mediaRecorder.stop();
+      btnGrabar.disabled = false;
+      btnDetener.disabled = true;
+    });
+  }
 
-  /* =======================
-     ENVÍO DEL FORMULARIO
-  ======================= */
+  /* ======== SUBMIT FORM ======== */
+  if (!form) return;
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     try {
+      /* ===== CAMPOS ===== */
       const nombrePaciente = document.getElementById("nombrePaciente").value.trim();
       const fechaRegistro = document.getElementById("fechaRegistro").value;
       const especialista = document.getElementById("especialista").value;
       const diagnostico = document.getElementById("diagnostico").value;
       const terapia = document.getElementById("terapia").value;
       const observaciones = document.getElementById("observaciones").value.trim();
-
-      const audioFile = document.getElementById("audio").files[0];
       const imagenFile = document.getElementById("imagen").files[0];
 
-      if (!imagenFile) {
-        alert("Debes subir una imagen");
+      if (!nombrePaciente || !fechaRegistro || !especialista || !imagenFile) {
+        alert("Completa los campos obligatorios");
         return;
       }
 
-      /* AUDIO: grabado o archivo */
-      let audioBase64Final = audioGrabadoBase64;
+      /* ===== AUDIO: grabado o archivo ===== */
+      let audioFile = audioGrabadoBlob || audioInput.files[0];
 
-      if (!audioBase64Final && audioFile) {
-        if (audioFile.size > 1024 * 1024) {
-          alert("El audio supera 1 MB");
-          return;
-        }
-
-        audioBase64Final = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(audioFile);
-        });
-      }
-
-      if (!audioBase64Final) {
+      if (!audioFile) {
         alert("Debes grabar o subir un audio");
         return;
       }
 
-      const imagenBase64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(imagenFile);
-      });
+      /* ===== CONVERTIR A BASE64 ===== */
+      const audioBase64 = await fileToBase64(audioFile);
+      const imagenBase64 = await fileToBase64(imagenFile);
 
+      /* ===== GUARDAR EN FIRESTORE ===== */
       await addDoc(collection(db, "PacientesRegistro"), {
         nombrePaciente,
         fechaRegistro,
@@ -119,20 +103,28 @@ document.addEventListener("DOMContentLoaded", () => {
         diagnostico,
         terapia,
         observaciones,
-        audioBase64: audioBase64Final,
+        audioBase64,
         imagenBase64,
         creadoEn: serverTimestamp()
       });
 
-      alert("Registro guardado correctamente");
+      alert("Registro guardado correctamente ✅");
       form.reset();
-      audioPreview.src = "";
-      audioGrabadoBase64 = null;
+      audioGrabadoBlob = null;
 
     } catch (error) {
       console.error(error);
-      alert("Error al guardar el registro");
+      alert("Error al guardar el registro ❌");
     }
   });
-
 });
+
+/* ================= UTIL BASE64 ================= */
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
