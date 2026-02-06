@@ -2,139 +2,96 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
   getFirestore,
   collection,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
-  authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
-  projectId: "fonoaudiologia-2bf21",
-  storageBucket: "fonoaudiologia-2bf21.appspot.com",
-  messagingSenderId: "645482975012",
-  appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
-};
+document.addEventListener("DOMContentLoaded", async () => {
 
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+  // 🔹 Firebase config
+  const firebaseConfig = {
+    apiKey: "TU_API_KEY",
+    authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
+    projectId: "fonoaudiologia-2bf21",
+    storageBucket: "fonoaudiologia-2bf21.appspot.com",
+    messagingSenderId: "XXXX",
+    appId: "XXXX"
+  };
 
-// Seguridad básica
-const usuario = localStorage.getItem("usuarioLogueado");
-if (!usuario) {
-  window.location.href = "Index.html";
-}
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-// Elementos DOM
-const tabla = document.getElementById("tablaRegistros");
-const detalleBox = document.getElementById("detalleContainer");
-const imgPreview = document.getElementById("verImagen");
-const audioPreview = document.getElementById("verAudio");
+  // 🔹 Elementos
+  const tabla = document.getElementById("tablaRegistros");
+  const detalle = document.getElementById("detalleContainer");
 
-let registroId = null;
+  const verImagen = document.getElementById("verImagen");
+  const verAudio = document.getElementById("verAudio");
 
-// =======================
-// CARGAR REGISTROS
-// =======================
-async function cargarRegistros() {
-  const snapshot = await getDocs(collection(db, "PacientesRegistro"));
+  const editNombre = document.getElementById("editNombre");
+  const editFecha = document.getElementById("editFecha");
+  const editEspecialista = document.getElementById("editEspecialista");
+  const editDiagnostico = document.getElementById("editDiagnostico");
+  const editTerapia = document.getElementById("editTerapia");
+  const editObservaciones = document.getElementById("editObservaciones");
+
+  // 🧪 Verificación crítica
+  if (!verAudio) {
+    console.error("❌ No se encontró el elemento <audio id='verAudio'>");
+    return;
+  }
+
+  // 🔹 Cargar registros
+  const snapshot = await getDocs(collection(db, "registros"));
   tabla.innerHTML = "";
 
-  snapshot.forEach(docSnap => {
-    const d = docSnap.data();
+  snapshot.forEach(doc => {
+    const data = doc.data();
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${d.nombrePaciente}</td>
-      <td>${d.fechaRegistro}</td>
-      <td>${d.especialista}</td>
-      <td>
-        <button class="btn-ver">Ver</button>
-        <button class="btn-borrar">Borrar</button>
-      </td>
+      <td>${data.nombrePaciente}</td>
+      <td>${data.fechaRegistro}</td>
+      <td>${data.especialista}</td>
+      <td><button>Ver</button></td>
     `;
 
-    tr.querySelector(".btn-ver").addEventListener("click", () => {
-      mostrarDetalle(docSnap.id, d);
-    });
-
-    tr.querySelector(".btn-borrar").addEventListener("click", () => {
-      borrarRegistro(docSnap.id);
+    tr.querySelector("button").addEventListener("click", () => {
+      mostrarDetalle(data);
     });
 
     tabla.appendChild(tr);
   });
-}
 
-// =======================
-// MOSTRAR DETALLE
-// =======================
-function mostrarDetalle(id, d) {
-  registroId = id;
+  // 🔹 Mostrar detalle
+  function mostrarDetalle(data) {
+    console.log("▶ Registro seleccionado:", data);
 
-  if (!detalleBox) return;
-  detalleBox.style.display = "block";
+    detalle.style.display = "block";
 
-  // Imagen
-  if (d.imagenBase64 && imgPreview) {
-    imgPreview.src = d.imagenBase64;
-    imgPreview.style.display = "block";
-  } else if (imgPreview) {
-    imgPreview.style.display = "none";
+    // 📸 Imagen
+    if (data.imagenUrl) {
+      verImagen.src = data.imagenUrl;
+      verImagen.style.display = "block";
+    } else {
+      verImagen.style.display = "none";
+    }
+
+    // 🎧 Audio (CLAVE)
+    if (data.audioUrl) {
+      verAudio.src = data.audioUrl;
+      verAudio.style.display = "block";
+      verAudio.load(); // 🔥 ESTO ES CLAVE
+    } else {
+      verAudio.style.display = "none";
+    }
+
+    // 📝 Inputs
+    editNombre.value = data.nombrePaciente || "";
+    editFecha.value = data.fechaRegistro || "";
+    editEspecialista.value = data.especialista || "";
+    editDiagnostico.value = data.diagnostico || "";
+    editTerapia.value = data.terapia || "";
+    editObservaciones.value = data.observaciones || "";
   }
 
-  // Audio
-  if (d.audioURL && audioPreview) {
-    audioPreview.src = d.audioURL;
-    audioPreview.load();
-    audioPreview.style.display = "block";
-  } else if (audioPreview) {
-    audioPreview.removeAttribute("src");
-    audioPreview.style.display = "none";
-  }
-
-  editNombre.value = d.nombrePaciente || "";
-  editFecha.value = d.fechaRegistro || "";
-  editEspecialista.value = d.especialista || "";
-  editDiagnostico.value = d.diagnostico || "";
-  editTerapia.value = d.terapia || "";
-  editObservaciones.value = d.observaciones || "";
-}
-
-// =======================
-// GUARDAR CAMBIOS
-// =======================
-document.getElementById("guardarCambios").addEventListener("click", async () => {
-  if (!registroId) return;
-
-  await updateDoc(doc(db, "PacientesRegistro", registroId), {
-    nombrePaciente: editNombre.value,
-    fechaRegistro: editFecha.value,
-    especialista: editEspecialista.value,
-    diagnostico: editDiagnostico.value,
-    terapia: editTerapia.value,
-    observaciones: editObservaciones.value
-  });
-
-  alert("Registro actualizado");
-  detalleBox.style.display = "none";
-  cargarRegistros();
 });
-
-// =======================
-// BORRAR REGISTRO
-// =======================
-async function borrarRegistro(id) {
-  if (!confirm("¿Seguro que deseas eliminar este registro?")) return;
-
-  await deleteDoc(doc(db, "PacientesRegistro", id));
-  alert("Registro eliminado");
-  cargarRegistros();
-}
-
-// =======================
-// INICIALIZAR
-// =======================
-cargarRegistros();
