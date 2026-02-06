@@ -8,6 +8,9 @@ import {
   deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* ========================
+   FIREBASE CONFIG
+======================== */
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
@@ -20,16 +23,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+/* ========================
+   SEGURIDAD
+======================== */
 const usuario = localStorage.getItem("usuarioLogueado");
 if (!usuario) {
   window.location.href = "Index.html";
 }
 
+/* ========================
+   ELEMENTOS
+======================== */
 const tabla = document.getElementById("tablaRegistros");
 const detalleBox = document.getElementById("detalleContainer");
 
+const imgVer = document.getElementById("verImagen");
+const audioVer = document.getElementById("verAudio");
+const btnDescargarAudio = document.getElementById("descargarAudio");
+
 let registroId = null;
 
+/* ========================
+   CARGAR REGISTROS
+======================== */
 async function cargarRegistros() {
   const snapshot = await getDocs(collection(db, "PacientesRegistro"));
   tabla.innerHTML = "";
@@ -48,29 +64,56 @@ async function cargarRegistros() {
       </td>
     `;
 
-    tr.querySelector(".btn-ver").onclick = () => mostrarDetalle(docSnap.id, d);
-    tr.querySelector(".btn-borrar").onclick = () => borrarRegistro(docSnap.id);
+    tr.querySelector(".btn-ver").onclick = () =>
+      mostrarDetalle(docSnap.id, d);
+
+    tr.querySelector(".btn-borrar").onclick = () =>
+      borrarRegistro(docSnap.id);
 
     tabla.appendChild(tr);
   });
 }
 
+/* ========================
+   MOSTRAR DETALLE
+======================== */
 function mostrarDetalle(id, d) {
   registroId = id;
   detalleBox.style.display = "block";
 
-  document.getElementById("verImagen").src = d.imagenBase64;
-  document.getElementById("verAudio").src = d.audioBase64;
+  /* Imagen */
+  if (d.imagenBase64) {
+    imgVer.src = d.imagenBase64;
+    imgVer.style.display = "block";
+  } else {
+    imgVer.style.display = "none";
+  }
 
-  document.getElementById("editNombre").value = d.nombrePaciente;
-  document.getElementById("editFecha").value = d.fechaRegistro;
-  document.getElementById("editEspecialista").value = d.especialista;
-  document.getElementById("editDiagnostico").value = d.diagnostico;
-  document.getElementById("editTerapia").value = d.terapia;
-  document.getElementById("editObservaciones").value = d.observaciones;
+  /* Audio (URL externa: Cloudinary) */
+  if (d.audioURL) {
+    audioVer.src = d.audioURL;
+    audioVer.style.display = "block";
+
+    btnDescargarAudio.href = d.audioURL;
+    btnDescargarAudio.style.display = "inline-block";
+  } else {
+    audioVer.style.display = "none";
+    btnDescargarAudio.style.display = "none";
+  }
+
+  /* Inputs */
+  editNombre.value = d.nombrePaciente || "";
+  editFecha.value = d.fechaRegistro || "";
+  editEspecialista.value = d.especialista || "";
+  editDiagnostico.value = d.diagnostico || "";
+  editTerapia.value = d.terapia || "";
+  editObservaciones.value = d.observaciones || "";
 }
 
-document.getElementById("guardarCambios").onclick = async () => {
+/* ========================
+   GUARDAR CAMBIOS
+======================== */
+guardarCambios.onclick = async () => {
   if (!registroId) return;
 
   await updateDoc(doc(db, "PacientesRegistro", registroId), {
@@ -82,18 +125,20 @@ document.getElementById("guardarCambios").onclick = async () => {
     observaciones: editObservaciones.value
   });
 
-  alert("Registro actualizado");
+  alert("✅ Registro actualizado");
   detalleBox.style.display = "none";
   cargarRegistros();
 };
 
+/* ========================
+   BORRAR
+======================== */
 async function borrarRegistro(id) {
   if (!confirm("¿Seguro que deseas eliminar este registro?")) return;
 
   await deleteDoc(doc(db, "PacientesRegistro", id));
-  alert("Registro eliminado");
+  alert("🗑 Registro eliminado");
   cargarRegistros();
 }
 
 cargarRegistros();
-
