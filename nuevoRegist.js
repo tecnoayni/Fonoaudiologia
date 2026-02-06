@@ -1,6 +1,19 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+/* ================== FIREBASE CONFIG ================== */
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
@@ -12,12 +25,56 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
+
+/* ================== AUDIO GRABACIÓN ================== */
+let mediaRecorder;
+let audioChunks = [];
+let audioBlob = null;
 
 document.addEventListener("DOMContentLoaded", () => {
 
   const form = document.getElementById("registroForm");
   if (!form) return;
 
+  const audioInput = document.getElementById("audio");
+  const imagenInput = document.getElementById("imagen");
+
+  const btnGrabar = document.getElementById("btnGrabar");
+  const btnDetener = document.getElementById("btnDetener");
+  const audioPreview = document.getElementById("audioPreview");
+
+  /* ---------- GRABAR AUDIO ---------- */
+  if (btnGrabar && btnDetener) {
+    btnGrabar.addEventListener("click", async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.start();
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+      mediaRecorder.onstop = () => {
+        audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        audioPreview.src = URL.createObjectURL(audioBlob);
+
+        // Si grabó audio, limpiar archivo subido
+        audioInput.value = "";
+      };
+
+      btnGrabar.disabled = true;
+      btnDetener.disabled = false;
+    });
+
+    btnDetener.addEventListener("click", () => {
+      mediaRecorder.stop();
+      btnGrabar.disabled = false;
+      btnDetener.disabled = true;
+    });
+  }
+
+  /* ================== GUARDAR REGISTRO ================== */
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -29,28 +86,47 @@ document.addEventListener("DOMContentLoaded", () => {
       const terapia = document.getElementById("terapia").value;
       const observaciones = document.getElementById("observaciones").value.trim();
 
-      const audioFile = document.getElementById("audio").files[0];
-      const imagenFile = document.getElementById("imagen").files[0];
+      const audioFile = audioInput.files[0];
+      const imagenFile = imagenInput.files[0];
 
-      if (!audioFile || !imagenFile) {
-        alert("Debes subir un archivo de audio y una imagen");
+      if (!imagenFile) {
+        alert("Debes subir una imagen");
         return;
       }
 
-      const audioBase64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(audioFile);
-      });
+      if (!audioFile && !audioBlob) {
+        alert("Debes subir un audio o grabar uno");
+        return;
+      }
 
-      const imagenBase64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(imagenFile);
-      });
+      /* ---------- SUBIR IMAGEN ---------- */
+      const imagenRef = ref(
+        storage,
+        `imagenes/${Date.now()}_${imagenFile.name}`
+      );
+      await uploadBytes(imagenRef, imagenFile);
+      const imagenURL = await getDownloadURL(imagenRef);
 
+      /* ---------- SUBIR AUDIO ---------- */
+      let audioURL = "";
+
+      if (audioBlob) {
+        const audioRef = ref(
+          storage,
+          `audios/grabado_${Date.now()}.webm`
+        );
+        await uploadBytes(audioRef, audioBlob);
+        audioURL = await getDownloadURL(audioRef);
+      } else {
+        const audioRef = ref(
+          storage,
+          `audios/${Date.now()}_${audioFile.name}`
+        );
+        await uploadBytes(audioRef, audioFile);
+        audioURL = await getDownloadURL(audioRef);
+      }
+
+      /* ---------- GUARDAR EN FIRESTORE ---------- */
       await addDoc(collection(db, "PacientesRegistro"), {
         nombrePaciente,
         fechaRegistro,
@@ -58,15 +134,18 @@ document.addEventListener("DOMContentLoaded", () => {
         diagnostico,
         terapia,
         observaciones,
-        audioBase64,
-        imagenBase64,
+        audioURL,
+        imagenURL,
         creadoEn: serverTimestamp()
       });
 
       alert("Registro guardado correctamente");
       form.reset();
+      audioBlob = null;
+      audioPreview.src = "";
 
     } catch (error) {
+      console.error(error);
       alert("Error al guardar el registro");
     }
   });
