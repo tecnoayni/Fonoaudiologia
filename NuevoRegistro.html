@@ -16,9 +16,9 @@
     <h2>NUEVO REGISTRO</h2>
 
     <form id="registroForm">
-
+        <label>Nombre del paciente</label>
         <input type="text" id="nombrePaciente" placeholder="Nombre del paciente" required>
-
+        <label>Fecha de evaluación</label>
         <input type="date" id="fechaRegistro" required>
 
         <label for="audio">Archivo de audio:</label>
@@ -27,6 +27,7 @@
         <label for="imagen">Archivo de imagen:</label>
         <input type="file" id="imagen" accept="image/*" required>
 
+        <label>Especialista</label>
         <select id="especialista" required>
             <option value="" disabled selected>Seleccionar especialista</option>
             <option value="Lic. Mirko Apaza">Lic. Mirko Apaza</option>
@@ -34,6 +35,7 @@
             <option value="Lic. Nathaly Villegas">Lic. Nathaly Villegas</option>
         </select>
 
+        <label>Diagnostico</label>
         <select id="diagnostico" required>
             <option value="" disabled selected>Seleccionar diagnóstico</option>
             <option value="Dificultades en la alimentación y la deglución">Dificultades en la alimentación y la deglución</option>
@@ -45,6 +47,7 @@
             <option value="Problemas orofaciales y miofuncionales">Problemas orofaciales y miofuncionales</option>
         </select>
 
+        <label>Terapia</label>
         <select id="terapia" required>
             <option value="" disabled selected>Seleccionar terapia</option>
             <option value="Terapia de Habla">Terapia de Habla</option>
@@ -79,4 +82,5 @@
 
 </body>
 </html>
+
 
