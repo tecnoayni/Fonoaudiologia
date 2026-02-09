@@ -3,8 +3,8 @@ import {
   getFirestore,
   collection,
   getDocs,
-  deleteDoc,
-  doc
+  doc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* 🔹 Firebase */
@@ -31,11 +31,9 @@ const editDiagnostico = document.getElementById("editDiagnostico");
 const editTerapia = document.getElementById("editTerapia");
 const editObservaciones = document.getElementById("editObservaciones");
 
-/* 🔹 BOTÓN BORRAR (CREADO AQUÍ) */
+/* 🗑️ BOTÓN BORRAR */
 const btnBorrar = document.createElement("button");
-btnBorrar.textContent = "🗑️ Borrar Registro";
-btnBorrar.style.background = "#c62828";
-btnBorrar.style.color = "#fff";
+btnBorrar.textContent = "Borrar Registro";
 btnBorrar.style.marginTop = "10px";
 
 /* 🔹 CARGAR REGISTROS */
@@ -52,12 +50,14 @@ async function cargarRegistros() {
       <td>${d.nombrePaciente || ""}</td>
       <td>${d.fechaRegistro || ""}</td>
       <td>${d.especialista || ""}</td>
-      <td><button class="btn-ver">Ver</button></td>
+      <td>
+        <button class="btn-ver">Ver</button>
+      </td>
     `;
 
-    tr.querySelector(".btn-ver").onclick = () => {
+    tr.querySelector(".btn-ver").addEventListener("click", () => {
       mostrarDetalle(d, docSnap.id);
-    };
+    });
 
     tabla.appendChild(tr);
   });
@@ -68,28 +68,17 @@ function mostrarDetalle(d, idDoc) {
   detalle.style.display = "block";
 
   /* 📸 IMAGEN */
-  if (d.imagenUrl) {
+  verImagen.src = "";
+  if (d.imagenUrl && d.imagenUrl !== "") {
     verImagen.src = d.imagenUrl;
-    verImagen.style.display = "block";
-  } else {
-    verImagen.style.display = "none";
   }
 
-  /* 🎧 AUDIO — SOLUCIÓN DEFINITIVA */
+  /* 🎧 AUDIO */
   verAudio.pause();
   verAudio.src = "";
-  verAudio.load();
-
-  if (d.audioUrl) {
+  if (d.audioUrl && d.audioUrl !== "") {
     verAudio.src = d.audioUrl;
-    verAudio.style.display = "block";
-    verAudio.controls = true;
-
-    setTimeout(() => {
-      verAudio.load();
-    }, 100);
-  } else {
-    verAudio.style.display = "none";
+    verAudio.load(); // 🔑 clave
   }
 
   /* 📝 DATOS */
@@ -106,13 +95,15 @@ function mostrarDetalle(d, idDoc) {
   }
 
   btnBorrar.onclick = async () => {
-    if (!confirm("¿Seguro que deseas borrar este registro?")) return;
+    if (!confirm("¿Seguro que deseas eliminar este registro?")) return;
+
     await deleteDoc(doc(db, "PacientesRegistro", idDoc));
     alert("Registro eliminado");
+
     detalle.style.display = "none";
     cargarRegistros();
   };
 }
 
-/* 🚀 INICIAR */
+/* 🔹 INICIAR */
 cargarRegistros();
