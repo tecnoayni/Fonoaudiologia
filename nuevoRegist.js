@@ -16,10 +16,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* 🔹 Form */
+/* 🔹 FORM */
 const form = document.getElementById("registroForm");
 
-/* 🔹 Inputs */
+/* 🔹 INPUTS */
 const nombrePacienteInput = document.getElementById("nombrePaciente");
 const fechaRegistroInput = document.getElementById("fechaRegistro");
 const especialistaInput = document.getElementById("especialista");
@@ -27,75 +27,122 @@ const diagnosticoInput = document.getElementById("diagnostico");
 const terapiaInput = document.getElementById("terapia");
 const observacionesInput = document.getElementById("observaciones");
 const imagenInput = document.getElementById("imagen");
-const audioInput = document.getElementById("audio"); // 🎧
 
+/* 🔹 AUDIO */
+const btnGrabar = document.getElementById("btnGrabar");
+const btnDetener = document.getElementById("btnDetener");
+const audioPreview = document.getElementById("audioPreview");
+
+let mediaRecorder;
+let audioChunks = [];
+let audioBlob = null;
+
+/* 🎙️ GRABAR AUDIO */
+btnGrabar.addEventListener("click", async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+  audioChunks = [];
+
+  mediaRecorder.ondataavailable = e => {
+    if (e.data.size > 0) audioChunks.push(e.data);
+  };
+
+  mediaRecorder.onstop = () => {
+    audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+
+    const audioURL = URL.createObjectURL(audioBlob);
+    audioPreview.src = audioURL;
+    audioPreview.load();
+
+    console.log("🎧 Audio listo:", audioBlob);
+  };
+
+  mediaRecorder.start();
+  btnGrabar.disabled = true;
+  btnDetener.disabled = false;
+});
+
+btnDetener.addEventListener("click", () => {
+  mediaRecorder.stop();
+  btnGrabar.disabled = false;
+  btnDetener.disabled = true;
+});
+
+/* 💾 SUBMIT */
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   try {
     const nombrePaciente = nombrePacienteInput.value.trim();
     const fechaRegistro = fechaRegistroInput.value;
+    const especialista = especialistaInput.value;
+    const diagnostico = diagnosticoInput.value;
+    const terapia = terapiaInput.value;
+    const observaciones = observacionesInput.value;
 
     if (!nombrePaciente || !fechaRegistro) {
       alert("Completa los campos obligatorios");
       return;
     }
 
-    /* 📸 SUBIR IMAGEN A CLOUDINARY */
+    /* 📸 IMAGEN → CLOUDINARY */
     const imagenFile = imagenInput.files[0];
     if (!imagenFile) {
       alert("Debes subir una imagen");
       return;
     }
 
-    const formImg = new FormData();
-    formImg.append("file", imagenFile);
-    formImg.append("upload_preset", "Fono-Audio");
+    const imgForm = new FormData();
+    imgForm.append("file", imagenFile);
+    imgForm.append("upload_preset", "Fono-Audio");
 
     const imgRes = await fetch(
       "https://api.cloudinary.com/v1_1/disjesee5/image/upload",
-      { method: "POST", body: formImg }
+      { method: "POST", body: imgForm }
     );
 
     const imgData = await imgRes.json();
     const imagenUrl = imgData.secure_url;
 
-    /* 🎧 SUBIR AUDIO A CLOUDINARY */
+    /* 🎧 AUDIO → CLOUDINARY */
     let audioUrl = "";
 
-    const audioFile = audioInput.files[0];
-    if (audioFile) {
-      const formAudio = new FormData();
-      formAudio.append("file", audioFile);
-      formAudio.append("upload_preset", "Fono-Audio");
+    if (audioBlob) {
+      const audioForm = new FormData();
+      audioForm.append("file", audioBlob);
+      audioForm.append("upload_preset", "Fono-Audio");
 
       const audioRes = await fetch(
         "https://api.cloudinary.com/v1_1/disjesee5/video/upload",
-        { method: "POST", body: formAudio }
+        { method: "POST", body: audioForm }
       );
 
       const audioData = await audioRes.json();
       audioUrl = audioData.secure_url;
     }
 
-    /* 💾 GUARDAR EN FIRESTORE */
+    /* 🧾 FIRESTORE */
     await addDoc(collection(db, "PacientesRegistro"), {
       nombrePaciente,
       fechaRegistro,
-      especialista: especialistaInput.value,
-      diagnostico: diagnosticoInput.value,
-      terapia: terapiaInput.value,
-      observaciones: observacionesInput.value,
+      especialista,
+      diagnostico,
+      terapia,
+      observaciones,
       imagenUrl,
-      audioUrl, // 🔥 AHORA SÍ SE GUARDA
+      audioUrl,
       creadoEn: serverTimestamp()
     });
 
-    alert("Registro guardado correctamente");
+    alert("✅ Registro guardado correctamente");
+
     form.reset();
+    audioPreview.src = "";
+    audioBlob = null;
 
   } catch (error) {
     console.error(error);
-    alert("Error al guardar el registro");
+    alert("❌ Error al guardar el registro");
   }
 });
