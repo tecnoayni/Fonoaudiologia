@@ -7,6 +7,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* 🔹 Firebase */
+console.log("🔥 Inicializando Firebase...");
+
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
@@ -15,6 +17,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+console.log("✅ Firebase listo");
 
 /* 🔹 FORM */
 const form = document.getElementById("registroForm");
@@ -39,32 +43,54 @@ let audioBlob = null;
 
 /* 🎙️ GRABAR AUDIO */
 btnGrabar.addEventListener("click", async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  console.log("🎙️ Click en GRABAR");
 
-  mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-  audioChunks = [];
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    console.log("🎧 Micrófono autorizado");
 
-  mediaRecorder.ondataavailable = e => {
-    if (e.data.size > 0) audioChunks.push(e.data);
-  };
+    mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+    audioChunks = [];
 
-  mediaRecorder.onstop = () => {
-    audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+    mediaRecorder.onstart = () => {
+      console.log("⏺️ Grabación iniciada...");
+    };
 
-    const audioURL = URL.createObjectURL(audioBlob);
-    audioPreview.src = audioURL;
-    audioPreview.load();
+    mediaRecorder.ondataavailable = e => {
+      if (e.data.size > 0) {
+        audioChunks.push(e.data);
+        console.log("📦 Chunk recibido:", e.data.size, "bytes");
+      }
+    };
 
-    console.log("🎧 Audio listo:", audioBlob);
-  };
+    mediaRecorder.onstop = () => {
+      audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+      console.log("⏹️ Grabación detenida");
+      console.log("🎧 Audio generado:", audioBlob);
 
-  mediaRecorder.start();
-  btnGrabar.disabled = true;
-  btnDetener.disabled = false;
+      const audioURL = URL.createObjectURL(audioBlob);
+      audioPreview.src = audioURL;
+      audioPreview.load();
+
+      console.log("▶️ Audio listo para reproducir");
+    };
+
+    mediaRecorder.start();
+    btnGrabar.disabled = true;
+    btnDetener.disabled = false;
+
+  } catch (err) {
+    console.error("❌ Error accediendo al micrófono", err);
+  }
 });
 
 btnDetener.addEventListener("click", () => {
-  mediaRecorder.stop();
+  console.log("⏹️ Click en DETENER");
+
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+
   btnGrabar.disabled = false;
   btnDetener.disabled = true;
 });
@@ -72,6 +98,8 @@ btnDetener.addEventListener("click", () => {
 /* 💾 SUBMIT */
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  console.log("💾 Enviando formulario...");
 
   try {
     const nombrePaciente = nombrePacienteInput.value.trim();
@@ -81,14 +109,26 @@ form.addEventListener("submit", async (e) => {
     const terapia = terapiaInput.value;
     const observaciones = observacionesInput.value;
 
+    console.log("📝 Datos capturados:", {
+      nombrePaciente,
+      fechaRegistro,
+      especialista,
+      diagnostico,
+      terapia
+    });
+
     if (!nombrePaciente || !fechaRegistro) {
+      console.warn("⚠️ Campos obligatorios vacíos");
       alert("Completa los campos obligatorios");
       return;
     }
 
     /* 📸 IMAGEN → CLOUDINARY */
+    console.log("📸 Subiendo imagen...");
+
     const imagenFile = imagenInput.files[0];
     if (!imagenFile) {
+      console.warn("⚠️ Imagen no seleccionada");
       alert("Debes subir una imagen");
       return;
     }
@@ -105,10 +145,14 @@ form.addEventListener("submit", async (e) => {
     const imgData = await imgRes.json();
     const imagenUrl = imgData.secure_url;
 
+    console.log("✅ Imagen subida:", imagenUrl);
+
     /* 🎧 AUDIO → CLOUDINARY */
     let audioUrl = "";
 
     if (audioBlob) {
+      console.log("🎧 Subiendo audio...");
+
       const audioForm = new FormData();
       audioForm.append("file", audioBlob);
       audioForm.append("upload_preset", "Fono-Audio");
@@ -120,9 +164,15 @@ form.addEventListener("submit", async (e) => {
 
       const audioData = await audioRes.json();
       audioUrl = audioData.secure_url;
+
+      console.log("✅ Audio subido:", audioUrl);
+    } else {
+      console.warn("⚠️ No hay audio para subir");
     }
 
     /* 🧾 FIRESTORE */
+    console.log("🧾 Guardando en Firestore...");
+
     await addDoc(collection(db, "PacientesRegistro"), {
       nombrePaciente,
       fechaRegistro,
@@ -135,14 +185,16 @@ form.addEventListener("submit", async (e) => {
       creadoEn: serverTimestamp()
     });
 
-    alert("✅ Registro guardado correctamente");
+    console.log("🎉 Registro guardado correctamente");
+
+    alert("Registro guardado correctamente");
 
     form.reset();
     audioPreview.src = "";
     audioBlob = null;
 
   } catch (error) {
-    console.error(error);
-    alert("❌ Error al guardar el registro");
+    console.error("❌ Error general:", error);
+    alert("Error al guardar el registro");
   }
 });
