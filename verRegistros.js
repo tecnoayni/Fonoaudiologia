@@ -1,131 +1,109 @@
-// ===============================
-// IMPORTS FIREBASE
-// ===============================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
   getFirestore,
   collection,
   getDocs,
-  deleteDoc,
-  doc
+  doc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// ===============================
-// CONFIG FIREBASE
-// ===============================
+/* 🔹 Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
-  projectId: "fonoaudiologia-2bf21",
-  storageBucket: "fonoaudiologia-2bf21.appspot.com",
-  messagingSenderId: "645482975012",
-  appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
+  projectId: "fonoaudiologia-2bf21"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-console.log("🔥 Firebase inicializado");
-
-// ===============================
-// ELEMENTOS DOM
-// ===============================
+/* 🔹 ELEMENTOS */
 const tabla = document.getElementById("tablaRegistros");
-const detalleContainer = document.getElementById("detalleContainer");
+const detalle = document.getElementById("detalleContainer");
+
 const verImagen = document.getElementById("verImagen");
 const verAudio = document.getElementById("verAudio");
 
-console.log("📦 Elementos DOM:", {
-  tabla,
-  detalleContainer,
-  verImagen,
-  verAudio
-});
+const editNombre = document.getElementById("editNombre");
+const editFecha = document.getElementById("editFecha");
+const editEspecialista = document.getElementById("editEspecialista");
+const editDiagnostico = document.getElementById("editDiagnostico");
+const editTerapia = document.getElementById("editTerapia");
+const editObservaciones = document.getElementById("editObservaciones");
 
-// ===============================
-// CARGAR REGISTROS
-// ===============================
+/* 🗑️ BOTÓN BORRAR */
+const btnBorrar = document.createElement("button");
+btnBorrar.textContent = "Borrar Registro";
+btnBorrar.style.marginTop = "10px";
+
+/* 🔹 CARGAR REGISTROS */
 async function cargarRegistros() {
-  console.log("📥 Cargando registros...");
   tabla.innerHTML = "";
 
-  const querySnapshot = await getDocs(collection(db, "registros"));
+  const snapshot = await getDocs(collection(db, "PacientesRegistro"));
 
-  querySnapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    console.log("📄 Registro encontrado:", data);
+  snapshot.forEach(docSnap => {
+    const d = docSnap.data();
 
     const tr = document.createElement("tr");
-
     tr.innerHTML = `
-      <td>${data.nombrePaciente || "-"}</td>
-      <td>${data.fechaRegistro || "-"}</td>
-      <td class="acciones">
+      <td>${d.nombrePaciente || ""}</td>
+      <td>${d.fechaRegistro || ""}</td>
+      <td>${d.especialista || ""}</td>
+      <td>
         <button class="btn-ver">Ver</button>
-        <button class="btn-borrar">Borrar</button>
       </td>
     `;
 
-    // ===============================
-    // BOTÓN VER
-    // ===============================
     tr.querySelector(".btn-ver").addEventListener("click", () => {
-      console.log("👁️ Ver registro:", docSnap.id);
-      mostrarDetalle(data);
-    });
-
-    // ===============================
-    // BOTÓN BORRAR
-    // ===============================
-    tr.querySelector(".btn-borrar").addEventListener("click", async () => {
-      const ok = confirm("¿Seguro que deseas borrar este registro?");
-      if (!ok) return;
-
-      console.log("🗑️ Borrando registro:", docSnap.id);
-      await deleteDoc(doc(db, "registros", docSnap.id));
-      cargarRegistros();
+      mostrarDetalle(d, docSnap.id);
     });
 
     tabla.appendChild(tr);
   });
 }
 
-// ===============================
-// MOSTRAR DETALLE
-// ===============================
-function mostrarDetalle(data) {
-  console.log("📌 Mostrando detalle:", data);
-  detalleContainer.style.display = "block";
+/* 🔹 MOSTRAR DETALLE */
+function mostrarDetalle(d, idDoc) {
+  detalle.style.display = "block";
 
-  // -------- IMAGEN --------
-  if (data.imagenUrl && data.imagenUrl !== "") {
-    console.log("🖼️ Imagen encontrada:", data.imagenUrl);
-    verImagen.src = data.imagenUrl;
-    verImagen.style.display = "block";
-  } else {
-    console.warn("⚠️ No hay imagen");
-    verImagen.style.display = "none";
+  /* 📸 IMAGEN */
+  verImagen.src = "";
+  if (d.imagenUrl && d.imagenUrl !== "") {
+    verImagen.src = d.imagenUrl;
   }
 
-  // -------- AUDIO --------
-  if (data.audioUrl && data.audioUrl !== "") {
-    console.log("🔊 Audio encontrado:", data.audioUrl);
-    verAudio.src = data.audioUrl;
-    verAudio.load(); // MUY IMPORTANTE
-    verAudio.style.display = "block";
-  } else {
-    console.warn("⚠️ No hay audio o audioUrl vacío");
-    verAudio.pause();
-    verAudio.removeAttribute("src");
-    verAudio.style.display = "none";
+  /* 🎧 AUDIO */
+  verAudio.pause();
+  verAudio.src = "";
+  if (d.audioUrl && d.audioUrl !== "") {
+    verAudio.src = d.audioUrl;
+    verAudio.load(); // 🔑 clave
   }
+
+  /* 📝 DATOS */
+  editNombre.value = d.nombrePaciente || "";
+  editFecha.value = d.fechaRegistro || "";
+  editEspecialista.value = d.especialista || "";
+  editDiagnostico.value = d.diagnostico || "";
+  editTerapia.value = d.terapia || "";
+  editObservaciones.value = d.observaciones || "";
+
+  /* 🗑️ BORRAR */
+  if (!detalle.contains(btnBorrar)) {
+    detalle.appendChild(btnBorrar);
+  }
+
+  btnBorrar.onclick = async () => {
+    if (!confirm("¿Seguro que deseas eliminar este registro?")) return;
+
+    await deleteDoc(doc(db, "PacientesRegistro", idDoc));
+    alert("Registro eliminado");
+
+    detalle.style.display = "none";
+    cargarRegistros();
+  };
 }
 
-// ===============================
-// INICIAR
-// ===============================
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ DOM cargado");
-  cargarRegistros();
-});
-
+/* 🔹 INICIAR */
+cargarRegistros();
