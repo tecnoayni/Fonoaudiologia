@@ -3,78 +3,136 @@ import {
   getFirestore,
   collection,
   getDocs,
+  getDoc,
+  doc,
   deleteDoc,
-  doc
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* 🔹 Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
-  projectId: "fonoaudiologia-2bf21"
+  projectId: "fonoaudiologia-2bf21",
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* 🔹 ELEMENTOS */
+/* =====================================================
+   ELEMENTOS DETALLE
+===================================================== */
+const detalleImagen = document.getElementById("detalleImagen");
+const detalleAudio = document.getElementById("detalleAudio");
+const detalleNombre = document.getElementById("detalleNombre");
+const detalleFecha = document.getElementById("detalleFecha");
+const detalleEspecialista = document.getElementById("detalleEspecialista");
+const detalleDiagnostico = document.getElementById("detalleDiagnostico");
+const detalleTerapia = document.getElementById("detalleTerapia");
+const detalleObservaciones = document.getElementById("detalleObservaciones");
+const guardarCambiosBtn = document.getElementById("guardarCambiosBtn");
+
+/* =====================================================
+   CARGAR DETALLE
+===================================================== */
+async function cargarDetalle() {
+  const registroId = localStorage.getItem("registroId");
+  if (!registroId) return;
+
+  const ref = doc(db, "PacientesRegistro", registroId);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    alert("Registro no encontrado");
+    return;
+  }
+
+  const data = snap.data();
+
+  // Imagen
+  detalleImagen.src = data.imagenUrl || "";
+
+  // Audio
+  if (data.audioUrl) {
+    detalleAudio.src = data.audioUrl;
+    detalleAudio.style.display = "block";
+  } else {
+    detalleAudio.style.display = "none";
+  }
+
+  // Inputs
+  detalleNombre.value = data.nombrePaciente || "";
+  detalleFecha.value = data.fechaRegistro || "";
+  detalleEspecialista.value = data.especialista || "";
+  detalleDiagnostico.value = data.diagnostico || "";
+  detalleTerapia.value = data.terapia || "";
+  detalleObservaciones.value = data.observaciones || "";
+}
+
+cargarDetalle();
+
+/* =====================================================
+   GUARDAR CAMBIOS
+===================================================== */
+guardarCambiosBtn.addEventListener("click", async () => {
+  const registroId = localStorage.getItem("registroId");
+  if (!registroId) return;
+
+  try {
+    await updateDoc(doc(db, "PacientesRegistro", registroId), {
+      nombrePaciente: detalleNombre.value,
+      fechaRegistro: detalleFecha.value,
+      especialista: detalleEspecialista.value,
+      diagnostico: detalleDiagnostico.value,
+      terapia: detalleTerapia.value,
+      observaciones: detalleObservaciones.value
+    });
+
+    alert("Cambios guardados correctamente");
+  } catch (error) {
+    console.error(error);
+    alert("Error al guardar cambios");
+  }
+});
+
+/* =====================================================
+   LISTA DE REGISTROS (VER / BORRAR)
+===================================================== */
 const tabla = document.getElementById("tablaRegistros");
-const detalle = document.getElementById("detalleContainer");
 
-const verImagen = document.getElementById("verImagen");
-const verAudio = document.getElementById("verAudio");
-
-/* 🔹 CARGAR REGISTROS */
 async function cargarRegistros() {
-  if (!tabla) return;
-
   tabla.innerHTML = "";
-  const snap = await getDocs(collection(db, "PacientesRegistro"));
+  const querySnapshot = await getDocs(collection(db, "PacientesRegistro"));
 
-  snap.forEach(docSnap => {
-    const d = docSnap.data();
+  querySnapshot.forEach((docu) => {
+    const d = docu.data();
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
       <td>${d.nombrePaciente}</td>
       <td>${d.fechaRegistro}</td>
       <td>${d.especialista}</td>
       <td>
-        <button class="btn-ver">Ver</button>
-        <button class="btn-borrar">Borrar</button>
+        <button class="verBtn">Ver</button>
+        <button class="borrarBtn">Borrar</button>
       </td>
     `;
 
-    tr.querySelector(".btn-ver").onclick = () => mostrarDetalle(d);
-    tr.querySelector(".btn-borrar").onclick = () => borrarRegistro(docSnap.id);
+    // VER
+    fila.querySelector(".verBtn").addEventListener("click", () => {
+      localStorage.setItem("registroId", docu.id);
+      cargarDetalle();
+    });
 
-    tabla.appendChild(tr);
+    // BORRAR
+    fila.querySelector(".borrarBtn").addEventListener("click", async () => {
+      if (confirm("¿Eliminar este registro?")) {
+        await deleteDoc(doc(db, "PacientesRegistro", docu.id));
+        cargarRegistros();
+      }
+    });
+
+    tabla.appendChild(fila);
   });
-}
-
-/* 🔹 DETALLE */
-function mostrarDetalle(d) {
-  if (!detalle) return;
-
-  detalle.style.display = "block";
-
-  if (d.imagenUrl && verImagen) {
-    verImagen.src = d.imagenUrl;
-    verImagen.style.display = "block";
-  }
-
-  if (d.audioUrl && verAudio) {
-    verAudio.src = d.audioUrl;
-    verAudio.load();
-    verAudio.style.display = "block";
-  }
-}
-
-/* 🔹 BORRAR */
-async function borrarRegistro(id) {
-  if (!confirm("¿Eliminar este registro?")) return;
-  await deleteDoc(doc(db, "PacientesRegistro", id));
-  cargarRegistros();
 }
 
 cargarRegistros();
