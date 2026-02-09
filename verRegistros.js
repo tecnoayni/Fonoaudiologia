@@ -2,59 +2,55 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
   getFirestore,
   collection,
-  getDocs,
-  doc,
-  getDoc,
-  deleteDoc
+  getDocs
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* 🔹 Firebase */
+/* 🔹 Firebase config */
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
   projectId: "fonoaudiologia-2bf21",
+  storageBucket: "fonoaudiologia-2bf21.appspot.com",
+  messagingSenderId: "645482975012",
+  appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* 🔹 DOM listo */
-document.addEventListener("DOMContentLoaded", () => {
-  cargarRegistros();
-});
+/* 🔹 ELEMENTOS */
+const tabla = document.getElementById("tablaRegistros");
+const detalle = document.getElementById("detalleContainer");
 
-/* 🔹 Cargar lista */
+const verImagen = document.getElementById("verImagen");
+const verAudio = document.getElementById("verAudio");
+
+const editNombre = document.getElementById("editNombre");
+const editFecha = document.getElementById("editFecha");
+const editEspecialista = document.getElementById("editEspecialista");
+const editDiagnostico = document.getElementById("editDiagnostico");
+const editTerapia = document.getElementById("editTerapia");
+const editObservaciones = document.getElementById("editObservaciones");
+
+/* 🔹 CARGAR REGISTROS */
 async function cargarRegistros() {
-  const tabla = document.getElementById("tablaRegistros");
   tabla.innerHTML = "";
 
   const snapshot = await getDocs(collection(db, "PacientesRegistro"));
 
-  snapshot.forEach((docSnap) => {
-    const d = docSnap.data();
+  snapshot.forEach(doc => {
+    const d = doc.data();
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${d.nombrePaciente || ""}</td>
       <td>${d.fechaRegistro || ""}</td>
       <td>${d.especialista || ""}</td>
-      <td>
-        <button class="verBtn">Ver</button>
-        <button class="borrarBtn">Borrar</button>
-      </td>
+      <td><button class="btn-ver">Ver</button></td>
     `;
 
-    /* 🔍 VER */
-    tr.querySelector(".verBtn").addEventListener("click", () => {
-      mostrarDetalle(docSnap.id);
-    });
-
-    /* 🗑️ BORRAR */
-    tr.querySelector(".borrarBtn").addEventListener("click", async () => {
-      if (confirm("¿Eliminar este registro?")) {
-        await deleteDoc(doc(db, "PacientesRegistro", docSnap.id));
-        cargarRegistros();
-      }
+    tr.querySelector(".btn-ver").addEventListener("click", () => {
+      mostrarDetalle(d);
     });
 
     tabla.appendChild(tr);
@@ -62,37 +58,45 @@ async function cargarRegistros() {
 }
 
 /* 🔹 MOSTRAR DETALLE */
-async function mostrarDetalle(id) {
-  const detalle = document.getElementById("detalleContainer");
+function mostrarDetalle(d) {
+  console.log("▶ Detalle:", d);
+
   detalle.style.display = "block";
 
-  const refDoc = doc(db, "PacientesRegistro", id);
-  const snap = await getDoc(refDoc);
-
-  if (!snap.exists()) return;
-
-  const d = snap.data();
-
-  /* 📸 Imagen */
-  const img = document.getElementById("verImagen");
-  img.src = d.imagenUrl || "";
-  img.style.display = d.imagenUrl ? "block" : "none";
-
-  /* 🎧 Audio */
-  const audio = document.getElementById("verAudio");
-  if (d.audioUrl) {
-    audio.src = d.audioUrl;
-    audio.load();
-    audio.style.display = "block";
+  /* 📸 IMAGEN */
+  if (d.imagenUrl && d.imagenUrl !== "") {
+    verImagen.src = d.imagenUrl;
+    verImagen.style.display = "block";
   } else {
-    audio.style.display = "none";
+    verImagen.style.display = "none";
   }
 
-  /* 📝 Datos */
-  document.getElementById("editNombre").value = d.nombrePaciente || "";
-  document.getElementById("editFecha").value = d.fechaRegistro || "";
-  document.getElementById("editEspecialista").value = d.especialista || "";
-  document.getElementById("editDiagnostico").value = d.diagnostico || "";
-  document.getElementById("editTerapia").value = d.terapia || "";
-  document.getElementById("editObservaciones").value = d.observaciones || "";
+  /* 🎧 AUDIO (CLAVE) */
+  verAudio.pause();
+  verAudio.removeAttribute("src");
+  verAudio.load();
+
+  if (d.audioUrl && d.audioUrl !== "") {
+    verAudio.src = d.audioUrl;
+    verAudio.controls = true;
+    verAudio.style.display = "block";
+
+    // 🔑 fuerza recarga real
+    setTimeout(() => {
+      verAudio.load();
+    }, 100);
+  } else {
+    verAudio.style.display = "none";
+  }
+
+  /* 📝 DATOS */
+  editNombre.value = d.nombrePaciente || "";
+  editFecha.value = d.fechaRegistro || "";
+  editEspecialista.value = d.especialista || "";
+  editDiagnostico.value = d.diagnostico || "";
+  editTerapia.value = d.terapia || "";
+  editObservaciones.value = d.observaciones || "";
 }
+
+/* 🚀 INICIAR */
+cargarRegistros();
