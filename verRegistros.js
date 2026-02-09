@@ -2,132 +2,79 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
   getFirestore,
   collection,
-  addDoc,
-  serverTimestamp
+  getDocs,
+  deleteDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-import {
-  getStorage,
-  ref,
-  uploadBytes,
-  getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 /* 🔹 Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
-  projectId: "fonoaudiologia-2bf21",
-  storageBucket: "fonoaudiologia-2bf21.appspot.com",
-  messagingSenderId: "645482975012",
-  appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
+  projectId: "fonoaudiologia-2bf21"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
-/* 🔹 FORM */
-const form = document.getElementById("registroForm");
+/* 🔹 ELEMENTOS */
+const tabla = document.getElementById("tablaRegistros");
+const detalle = document.getElementById("detalleContainer");
 
-/* 🔹 AUDIO grabado */
-let audioBlob = null;
+const verImagen = document.getElementById("verImagen");
+const verAudio = document.getElementById("verAudio");
 
-/* 🎙️ Grabación */
-let mediaRecorder;
-let chunks = [];
+/* 🔹 CARGAR REGISTROS */
+async function cargarRegistros() {
+  if (!tabla) return;
 
-const btnGrabar = document.getElementById("btnGrabar");
-const btnDetener = document.getElementById("btnDetener");
-const audioPreview = document.getElementById("audioPreview");
+  tabla.innerHTML = "";
+  const snap = await getDocs(collection(db, "PacientesRegistro"));
 
-btnGrabar.onclick = async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  mediaRecorder = new MediaRecorder(stream);
-  chunks = [];
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
 
-  mediaRecorder.ondataavailable = e => chunks.push(e.data);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${d.nombrePaciente}</td>
+      <td>${d.fechaRegistro}</td>
+      <td>${d.especialista}</td>
+      <td>
+        <button class="btn-ver">Ver</button>
+        <button class="btn-borrar">Borrar</button>
+      </td>
+    `;
 
-  mediaRecorder.onstop = () => {
-    audioBlob = new Blob(chunks, { type: "audio/webm" });
-    audioPreview.src = URL.createObjectURL(audioBlob);
-  };
+    tr.querySelector(".btn-ver").onclick = () => mostrarDetalle(d);
+    tr.querySelector(".btn-borrar").onclick = () => borrarRegistro(docSnap.id);
 
-  mediaRecorder.start();
-  btnGrabar.disabled = true;
-  btnDetener.disabled = false;
-};
+    tabla.appendChild(tr);
+  });
+}
 
-btnDetener.onclick = () => {
-  mediaRecorder.stop();
-  btnGrabar.disabled = false;
-  btnDetener.disabled = true;
-};
+/* 🔹 DETALLE */
+function mostrarDetalle(d) {
+  if (!detalle) return;
 
-/* 🔹 SUBMIT */
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+  detalle.style.display = "block";
 
-  try {
-    const nombrePaciente = document.getElementById("nombrePaciente").value.trim();
-    const fechaRegistro = document.getElementById("fechaRegistro").value;
-    const especialista = document.getElementById("especialista").value;
-    const diagnostico = document.getElementById("diagnostico").value;
-    const terapia = document.getElementById("terapia").value;
-    const observaciones = document.getElementById("observaciones").value;
-
-    /* 📸 IMAGEN */
-    const imagenFile = document.getElementById("imagen").files[0];
-    if (!imagenFile) {
-      alert("Debes subir una imagen");
-      return;
-    }
-
-    /* 📸 SUBIR IMAGEN → FIREBASE */
-    const imgRef = ref(storage, `imagenes/${Date.now()}_${imagenFile.name}`);
-    await uploadBytes(imgRef, imagenFile);
-    const imagenUrl = await getDownloadURL(imgRef);
-
-    /* 🎧 AUDIO → CLOUDINARY */
-    let audioUrl = "";
-
-    const audioInputFile = document.getElementById("audio").files[0];
-    const audioFinal = audioBlob || audioInputFile;
-
-    if (audioFinal) {
-      const formData = new FormData();
-      formData.append("file", audioFinal);
-      formData.append("upload_preset", "disjesee5");
-
-      const res = await fetch(
-        "https://api.cloudinary.com/v1_1/disjesee5/video/upload",
-        { method: "POST", body: formData }
-      );
-
-      const data = await res.json();
-      audioUrl = data.secure_url;
-    }
-
-    /* 💾 FIRESTORE */
-    await addDoc(collection(db, "PacientesRegistro"), {
-      nombrePaciente,
-      fechaRegistro,
-      especialista,
-      diagnostico,
-      terapia,
-      observaciones,
-      imagenUrl,
-      audioUrl,
-      creadoEn: serverTimestamp()
-    });
-
-    alert("Registro guardado correctamente");
-    form.reset();
-    audioPreview.src = "";
-    audioBlob = null;
-
-  } catch (err) {
-    console.error(err);
-    alert("Error al guardar el registro");
+  if (d.imagenUrl && verImagen) {
+    verImagen.src = d.imagenUrl;
+    verImagen.style.display = "block";
   }
-});
+
+  if (d.audioUrl && verAudio) {
+    verAudio.src = d.audioUrl;
+    verAudio.load();
+    verAudio.style.display = "block";
+  }
+}
+
+/* 🔹 BORRAR */
+async function borrarRegistro(id) {
+  if (!confirm("¿Eliminar este registro?")) return;
+  await deleteDoc(doc(db, "PacientesRegistro", id));
+  cargarRegistros();
+}
+
+cargarRegistros();
