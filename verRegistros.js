@@ -2,17 +2,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
   getFirestore,
   collection,
-  getDocs
+  getDocs,
+  deleteDoc,
+  doc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* 🔹 Firebase config */
+/* 🔹 Firebase */
 const firebaseConfig = {
   apiKey: "AIzaSyB2XMWciNurV8oawf9EAQbCDySDPcNnr5g",
   authDomain: "fonoaudiologia-2bf21.firebaseapp.com",
-  projectId: "fonoaudiologia-2bf21",
-  storageBucket: "fonoaudiologia-2bf21.appspot.com",
-  messagingSenderId: "645482975012",
-  appId: "1:645482975012:web:3e3bed80ac3239f99aedb1"
+  projectId: "fonoaudiologia-2bf21"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -32,14 +31,21 @@ const editDiagnostico = document.getElementById("editDiagnostico");
 const editTerapia = document.getElementById("editTerapia");
 const editObservaciones = document.getElementById("editObservaciones");
 
+/* 🔹 BOTÓN BORRAR (CREADO AQUÍ) */
+const btnBorrar = document.createElement("button");
+btnBorrar.textContent = "🗑️ Borrar Registro";
+btnBorrar.style.background = "#c62828";
+btnBorrar.style.color = "#fff";
+btnBorrar.style.marginTop = "10px";
+
 /* 🔹 CARGAR REGISTROS */
 async function cargarRegistros() {
   tabla.innerHTML = "";
 
   const snapshot = await getDocs(collection(db, "PacientesRegistro"));
 
-  snapshot.forEach(doc => {
-    const d = doc.data();
+  snapshot.forEach(docSnap => {
+    const d = docSnap.data();
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -49,39 +55,36 @@ async function cargarRegistros() {
       <td><button class="btn-ver">Ver</button></td>
     `;
 
-    tr.querySelector(".btn-ver").addEventListener("click", () => {
-      mostrarDetalle(d);
-    });
+    tr.querySelector(".btn-ver").onclick = () => {
+      mostrarDetalle(d, docSnap.id);
+    };
 
     tabla.appendChild(tr);
   });
 }
 
 /* 🔹 MOSTRAR DETALLE */
-function mostrarDetalle(d) {
-  console.log("▶ Detalle:", d);
-
+function mostrarDetalle(d, idDoc) {
   detalle.style.display = "block";
 
   /* 📸 IMAGEN */
-  if (d.imagenUrl && d.imagenUrl !== "") {
+  if (d.imagenUrl) {
     verImagen.src = d.imagenUrl;
     verImagen.style.display = "block";
   } else {
     verImagen.style.display = "none";
   }
 
-  /* 🎧 AUDIO (CLAVE) */
+  /* 🎧 AUDIO — SOLUCIÓN DEFINITIVA */
   verAudio.pause();
-  verAudio.removeAttribute("src");
+  verAudio.src = "";
   verAudio.load();
 
-  if (d.audioUrl && d.audioUrl !== "") {
+  if (d.audioUrl) {
     verAudio.src = d.audioUrl;
-    verAudio.controls = true;
     verAudio.style.display = "block";
+    verAudio.controls = true;
 
-    // 🔑 fuerza recarga real
     setTimeout(() => {
       verAudio.load();
     }, 100);
@@ -96,6 +99,19 @@ function mostrarDetalle(d) {
   editDiagnostico.value = d.diagnostico || "";
   editTerapia.value = d.terapia || "";
   editObservaciones.value = d.observaciones || "";
+
+  /* 🗑️ BORRAR */
+  if (!detalle.contains(btnBorrar)) {
+    detalle.appendChild(btnBorrar);
+  }
+
+  btnBorrar.onclick = async () => {
+    if (!confirm("¿Seguro que deseas borrar este registro?")) return;
+    await deleteDoc(doc(db, "PacientesRegistro", idDoc));
+    alert("Registro eliminado");
+    detalle.style.display = "none";
+    cargarRegistros();
+  };
 }
 
 /* 🚀 INICIAR */
