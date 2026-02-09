@@ -27,6 +27,7 @@ const diagnosticoInput = document.getElementById("diagnostico");
 const terapiaInput = document.getElementById("terapia");
 const observacionesInput = document.getElementById("observaciones");
 const imagenInput = document.getElementById("imagen");
+const audioInput = document.getElementById("audio"); // 🎧
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -34,17 +35,13 @@ form.addEventListener("submit", async (e) => {
   try {
     const nombrePaciente = nombrePacienteInput.value.trim();
     const fechaRegistro = fechaRegistroInput.value;
-    const especialista = especialistaInput.value;
-    const diagnostico = diagnosticoInput.value;
-    const terapia = terapiaInput.value;
-    const observaciones = observacionesInput.value;
 
     if (!nombrePaciente || !fechaRegistro) {
       alert("Completa los campos obligatorios");
       return;
     }
 
-    /* 📸 Imagen → Cloudinary */
+    /* 📸 SUBIR IMAGEN A CLOUDINARY */
     const imagenFile = imagenInput.files[0];
     if (!imagenFile) {
       alert("Debes subir una imagen");
@@ -63,19 +60,34 @@ form.addEventListener("submit", async (e) => {
     const imgData = await imgRes.json();
     const imagenUrl = imgData.secure_url;
 
-    /* 🎧 Audio (Cloudinary) */
-    const audioUrl = window.audioCloudinaryUrl || "";
+    /* 🎧 SUBIR AUDIO A CLOUDINARY */
+    let audioUrl = "";
 
-    /* 💾 Firestore */
+    const audioFile = audioInput.files[0];
+    if (audioFile) {
+      const formAudio = new FormData();
+      formAudio.append("file", audioFile);
+      formAudio.append("upload_preset", "Fono-Audio");
+
+      const audioRes = await fetch(
+        "https://api.cloudinary.com/v1_1/disjesee5/video/upload",
+        { method: "POST", body: formAudio }
+      );
+
+      const audioData = await audioRes.json();
+      audioUrl = audioData.secure_url;
+    }
+
+    /* 💾 GUARDAR EN FIRESTORE */
     await addDoc(collection(db, "PacientesRegistro"), {
       nombrePaciente,
       fechaRegistro,
-      especialista,
-      diagnostico,
-      terapia,
-      observaciones,
+      especialista: especialistaInput.value,
+      diagnostico: diagnosticoInput.value,
+      terapia: terapiaInput.value,
+      observaciones: observacionesInput.value,
       imagenUrl,
-      audioUrl,
+      audioUrl, // 🔥 AHORA SÍ SE GUARDA
       creadoEn: serverTimestamp()
     });
 
