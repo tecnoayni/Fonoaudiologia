@@ -18,84 +18,81 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* 🔹 TABLA */
-const tabla = document.getElementById("tablaRegistros");
+/* 🔹 Esperar DOM */
+document.addEventListener("DOMContentLoaded", () => {
+  const tabla = document.getElementById("tablaRegistros");
+
+  if (!tabla) {
+    console.error("❌ No existe #tablaRegistros");
+    return;
+  }
+
+  cargarRegistros(tabla);
+});
 
 /* 🔹 Cargar registros */
-async function cargarRegistros() {
+async function cargarRegistros(tabla) {
   tabla.innerHTML = "";
 
-  const querySnapshot = await getDocs(collection(db, "PacientesRegistro"));
+  const snapshot = await getDocs(collection(db, "PacientesRegistro"));
 
-  querySnapshot.forEach((docu) => {
-    const data = docu.data();
+  snapshot.forEach((docu) => {
+    const d = docu.data();
 
     const fila = document.createElement("tr");
 
     fila.innerHTML = `
-      <td>${data.nombrePaciente || ""}</td>
-      <td>${data.fechaRegistro || ""}</td>
-      <td>${data.especialista || ""}</td>
+      <td>${d.nombrePaciente || ""}</td>
+      <td>${d.fechaRegistro || ""}</td>
+      <td>${d.especialista || ""}</td>
       <td>
         <button class="verBtn">Ver</button>
         <button class="borrarBtn">Borrar</button>
       </td>
     `;
 
-    /* 👁️ VER DETALLE */
-    fila.querySelector(".verBtn").addEventListener("click", async () => {
-      try {
+    /* 🔍 BOTÓN VER */
+    const btnVer = fila.querySelector(".verBtn");
+    if (btnVer) {
+      btnVer.addEventListener("click", async () => {
         const ref = doc(db, "PacientesRegistro", docu.id);
         const snap = await getDoc(ref);
 
-        if (!snap.exists()) {
-          alert("Registro no encontrado");
-          return;
-        }
+        if (!snap.exists()) return;
 
-        const d = snap.data();
+        const r = snap.data();
 
-        /* 📸 Imagen */
-        document.getElementById("detalleImagen").src = d.imagenUrl || "";
+        document.getElementById("detalleImagen").src = r.imagenUrl || "";
 
-        /* 🎧 Audio */
         const audio = document.getElementById("detalleAudio");
-        if (d.audioUrl) {
-          audio.src = d.audioUrl;
+        if (r.audioUrl) {
+          audio.src = r.audioUrl;
           audio.load();
           audio.style.display = "block";
         } else {
           audio.style.display = "none";
         }
 
-        /* 🧾 Inputs */
-        document.getElementById("detalleNombre").value = d.nombrePaciente || "";
-        document.getElementById("detalleFecha").value = d.fechaRegistro || "";
-        document.getElementById("detalleEspecialista").value = d.especialista || "";
-        document.getElementById("detalleDiagnostico").value = d.diagnostico || "";
-        document.getElementById("detalleTerapia").value = d.terapia || "";
-        document.getElementById("detalleObservaciones").value = d.observaciones || "";
+        document.getElementById("detalleNombre").value = r.nombrePaciente || "";
+        document.getElementById("detalleFecha").value = r.fechaRegistro || "";
+        document.getElementById("detalleEspecialista").value = r.especialista || "";
+        document.getElementById("detalleDiagnostico").value = r.diagnostico || "";
+        document.getElementById("detalleTerapia").value = r.terapia || "";
+        document.getElementById("detalleObservaciones").value = r.observaciones || "";
+      });
+    }
 
-        /* Guardar ID para editar */
-        localStorage.setItem("registroId", docu.id);
-
-      } catch (err) {
-        console.error(err);
-        alert("Error al cargar detalle");
-      }
-    });
-
-    /* 🗑️ BORRAR */
-    fila.querySelector(".borrarBtn").addEventListener("click", async () => {
-      if (confirm("¿Seguro que deseas borrar este registro?")) {
-        await deleteDoc(doc(db, "PacientesRegistro", docu.id));
-        cargarRegistros();
-      }
-    });
+    /* 🗑️ BOTÓN BORRAR */
+    const btnBorrar = fila.querySelector(".borrarBtn");
+    if (btnBorrar) {
+      btnBorrar.addEventListener("click", async () => {
+        if (confirm("¿Eliminar este registro?")) {
+          await deleteDoc(doc(db, "PacientesRegistro", docu.id));
+          cargarRegistros(tabla);
+        }
+      });
+    }
 
     tabla.appendChild(fila);
   });
 }
-
-/* 🔹 Inicial */
-cargarRegistros();
