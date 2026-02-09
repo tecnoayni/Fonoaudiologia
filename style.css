@@ -331,3 +331,17 @@ th {
         max-width: 150px;
     }
 }
+
+#cardsMobile {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    #cardsMobile {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+    }
+}
+
+
