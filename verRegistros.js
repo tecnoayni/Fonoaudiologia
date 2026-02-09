@@ -18,30 +18,23 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* 🔹 Esperar DOM */
+/* 🔹 DOM listo */
 document.addEventListener("DOMContentLoaded", () => {
-  const tabla = document.getElementById("tablaRegistros");
-
-  if (!tabla) {
-    console.error("❌ No existe #tablaRegistros");
-    return;
-  }
-
-  cargarRegistros(tabla);
+  cargarRegistros();
 });
 
-/* 🔹 Cargar registros */
-async function cargarRegistros(tabla) {
+/* 🔹 Cargar lista */
+async function cargarRegistros() {
+  const tabla = document.getElementById("tablaRegistros");
   tabla.innerHTML = "";
 
   const snapshot = await getDocs(collection(db, "PacientesRegistro"));
 
-  snapshot.forEach((docu) => {
-    const d = docu.data();
+  snapshot.forEach((docSnap) => {
+    const d = docSnap.data();
 
-    const fila = document.createElement("tr");
-
-    fila.innerHTML = `
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
       <td>${d.nombrePaciente || ""}</td>
       <td>${d.fechaRegistro || ""}</td>
       <td>${d.especialista || ""}</td>
@@ -51,48 +44,55 @@ async function cargarRegistros(tabla) {
       </td>
     `;
 
-    /* 🔍 BOTÓN VER */
-    const btnVer = fila.querySelector(".verBtn");
-    if (btnVer) {
-      btnVer.addEventListener("click", async () => {
-        const ref = doc(db, "PacientesRegistro", docu.id);
-        const snap = await getDoc(ref);
+    /* 🔍 VER */
+    tr.querySelector(".verBtn").addEventListener("click", () => {
+      mostrarDetalle(docSnap.id);
+    });
 
-        if (!snap.exists()) return;
+    /* 🗑️ BORRAR */
+    tr.querySelector(".borrarBtn").addEventListener("click", async () => {
+      if (confirm("¿Eliminar este registro?")) {
+        await deleteDoc(doc(db, "PacientesRegistro", docSnap.id));
+        cargarRegistros();
+      }
+    });
 
-        const r = snap.data();
-
-        document.getElementById("detalleImagen").src = r.imagenUrl || "";
-
-        const audio = document.getElementById("detalleAudio");
-        if (r.audioUrl) {
-          audio.src = r.audioUrl;
-          audio.load();
-          audio.style.display = "block";
-        } else {
-          audio.style.display = "none";
-        }
-
-        document.getElementById("detalleNombre").value = r.nombrePaciente || "";
-        document.getElementById("detalleFecha").value = r.fechaRegistro || "";
-        document.getElementById("detalleEspecialista").value = r.especialista || "";
-        document.getElementById("detalleDiagnostico").value = r.diagnostico || "";
-        document.getElementById("detalleTerapia").value = r.terapia || "";
-        document.getElementById("detalleObservaciones").value = r.observaciones || "";
-      });
-    }
-
-    /* 🗑️ BOTÓN BORRAR */
-    const btnBorrar = fila.querySelector(".borrarBtn");
-    if (btnBorrar) {
-      btnBorrar.addEventListener("click", async () => {
-        if (confirm("¿Eliminar este registro?")) {
-          await deleteDoc(doc(db, "PacientesRegistro", docu.id));
-          cargarRegistros(tabla);
-        }
-      });
-    }
-
-    tabla.appendChild(fila);
+    tabla.appendChild(tr);
   });
+}
+
+/* 🔹 MOSTRAR DETALLE */
+async function mostrarDetalle(id) {
+  const detalle = document.getElementById("detalleContainer");
+  detalle.style.display = "block";
+
+  const refDoc = doc(db, "PacientesRegistro", id);
+  const snap = await getDoc(refDoc);
+
+  if (!snap.exists()) return;
+
+  const d = snap.data();
+
+  /* 📸 Imagen */
+  const img = document.getElementById("verImagen");
+  img.src = d.imagenUrl || "";
+  img.style.display = d.imagenUrl ? "block" : "none";
+
+  /* 🎧 Audio */
+  const audio = document.getElementById("verAudio");
+  if (d.audioUrl) {
+    audio.src = d.audioUrl;
+    audio.load();
+    audio.style.display = "block";
+  } else {
+    audio.style.display = "none";
+  }
+
+  /* 📝 Datos */
+  document.getElementById("editNombre").value = d.nombrePaciente || "";
+  document.getElementById("editFecha").value = d.fechaRegistro || "";
+  document.getElementById("editEspecialista").value = d.especialista || "";
+  document.getElementById("editDiagnostico").value = d.diagnostico || "";
+  document.getElementById("editTerapia").value = d.terapia || "";
+  document.getElementById("editObservaciones").value = d.observaciones || "";
 }
